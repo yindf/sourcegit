@@ -30,6 +30,12 @@ namespace SourceGit.ViewModels
             set => SetProperty(ref _repositorySidebarWidth, value);
         }
 
+        public GridLength GroupSidebarWidth
+        {
+            get => _groupSidebarWidth;
+            set => SetProperty(ref _groupSidebarWidth, value);
+        }
+
         public GridLength HistoriesAuthorColumnWidth
         {
             get => _historiesAuthorColumnWidth;
@@ -61,6 +67,7 @@ namespace SourceGit.ViewModels
         }
 
         private GridLength _repositorySidebarWidth = new GridLength(250, GridUnitType.Pixel);
+        private GridLength _groupSidebarWidth = new GridLength(250, GridUnitType.Pixel);
         private GridLength _historiesAuthorColumnWidth = new GridLength(120, GridUnitType.Pixel);
         private GridLength _workingCopyLeftWidth = new GridLength(300, GridUnitType.Pixel);
         private GridLength _stashesLeftWidth = new GridLength(300, GridUnitType.Pixel);

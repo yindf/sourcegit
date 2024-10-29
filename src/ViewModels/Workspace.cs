@@ -28,6 +28,12 @@ namespace SourceGit.ViewModels
             set;
         } = new List<string>();
 
+        public List<string> Groups
+        {
+            get;
+            set;
+        } = new List<string>();
+
         public int ActiveIdx
         {
             get;

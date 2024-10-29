@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json.Serialization;
 
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -8,6 +9,8 @@ namespace SourceGit.ViewModels
 {
     public class RepositoryNode : ObservableObject
     {
+        [JsonIgnore]
+        public object Context { get; set; }
         public string Id
         {
             get => _id;
@@ -15,6 +18,21 @@ namespace SourceGit.ViewModels
             {
                 var normalized = value.Replace('\\', '/');
                 SetProperty(ref _id, normalized);
+            }
+        }
+
+        public Repository Repo
+        {
+            get
+            {
+                if (_repo == null)
+                {
+                    if (App.GetLauncer().ActivePage.Data is RepositoryGroup group)
+                    {
+                        _repo = group.Repositories.Where(r => r.RepositoryNode.Id == Id).FirstOrDefault();
+                    }
+                }
+                return _repo;
             }
         }
 
@@ -102,9 +120,12 @@ namespace SourceGit.ViewModels
 
         private string _id = string.Empty;
         private string _name = string.Empty;
+        private string _displayName = string.Empty;
         private bool _isRepository = false;
         private int _bookmark = 0;
         private bool _isExpanded = false;
         private bool _isVisible = true;
+        private bool _busy = true;
+        private Repository _repo = null;
     }
 }

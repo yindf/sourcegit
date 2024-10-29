@@ -678,6 +678,7 @@
   <x:String x:Key="Text.Welcome.Edit" xml:space="preserve">Edit</x:String>
   <x:String x:Key="Text.Welcome.Move" xml:space="preserve">Move to Another Group</x:String>
   <x:String x:Key="Text.Welcome.OpenAllInNode" xml:space="preserve">Open All Repositories</x:String>
+  <x:String x:Key="Text.Welcome.OpenGroup" xml:space="preserve">Open Group</x:String>
   <x:String x:Key="Text.Welcome.OpenOrInit" xml:space="preserve">Open Repository</x:String>
   <x:String x:Key="Text.Welcome.OpenTerminal" xml:space="preserve">Open Terminal</x:String>
   <x:String x:Key="Text.Welcome.ScanDefaultCloneDir" xml:space="preserve">Rescan Repositories in Default Clone Dir</x:String>

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace SourceGit.ViewModels
@@ -62,22 +63,47 @@ namespace SourceGit.ViewModels
 
         public override Task<bool> Sure()
         {
-            _repo.SetWatcherEnabled(false);
             ProgressDescription = _changes == null ? "Discard all local changes ..." : $"Discard total {_changes.Count} changes ...";
 
             return Task.Run(() =>
             {
-                if (Mode is DiscardAllMode all)
-                    Commands.Discard.All(_repo.FullPath, all.IncludeIgnored);
-                else
-                    Commands.Discard.Changes(_repo.FullPath, _changes);
-
-                CallUIThread(() =>
+                if (_changes != null && _changes.Any(c => c.Repo != null))
                 {
-                    _repo.MarkWorkingCopyDirtyManually();
-                    _repo.SetWatcherEnabled(true);
-                });
+                    var g = _changes.GroupBy(c => c.Repo);
+                    foreach (var kv in g)
+                    {
+                        var repo = kv.Key;
+                        var changes = kv.ToList();
 
+                        repo.SetWatcherEnabled(false);
+
+                        if (Mode is DiscardAllMode all)
+                            Commands.Discard.All(repo.FullPath, all.IncludeIgnored);
+                        else
+                            Commands.Discard.Changes(repo.FullPath, changes);
+
+                        CallUIThread(() =>
+                        {
+                            repo.MarkWorkingCopyDirtyManually();
+                            repo.SetWatcherEnabled(true);
+                        });
+                    }
+                }
+                else
+                {
+                    _repo.SetWatcherEnabled(false);
+
+                    if (Mode is DiscardAllMode all)
+                        Commands.Discard.All(_repo.FullPath, all.IncludeIgnored);
+                    else
+                        Commands.Discard.Changes(_repo.FullPath, _changes);
+
+                    CallUIThread(() =>
+                    {
+                        _repo.MarkWorkingCopyDirtyManually();
+                        _repo.SetWatcherEnabled(true);
+                    });
+                }
                 return true;
             });
         }

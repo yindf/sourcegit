@@ -1,18 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
-
+using System.Linq;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Avalonia.Collections;
 using Avalonia.Controls;
-
 using CommunityToolkit.Mvvm.ComponentModel;
+using SourceGit.Models;
+using SourceGit.Views;
 
 namespace SourceGit.ViewModels
 {
-    public class Welcome : ObservableObject
+    public class RepositoryGroup : ObservableObject
     {
-        public static Welcome Instance => _instance;
-
         public AvaloniaList<RepositoryNode> Rows
         {
             get;
@@ -29,28 +30,53 @@ namespace SourceGit.ViewModels
             }
         }
 
-        public Welcome()
+        public string PathPrefix => _pathPrefix;
+        public object Data
         {
+            get => _repo;
+            set => SetProperty(ref _repo, value);
+        }
+
+        public List<Repository> Repositories { get; set; } = new List<Repository>();
+
+        public RepositoryNode Group { get; private set; }
+
+        public RepositoryGroup(RepositoryNode group)
+        {
+            Group = group;
             Refresh();
         }
+
 
         public void Refresh()
         {
             if (string.IsNullOrWhiteSpace(_searchFilter))
             {
-                foreach (var node in Preference.Instance.RepositoryNodes)
-                    ResetVisibility(node);
+                    ResetVisibility(Group);
             }
             else
             {
-                foreach (var node in Preference.Instance.RepositoryNodes)
-                    SetVisibilityBySearch(node);
+                    SetVisibilityBySearch(Group);
             }
 
             var rows = new List<RepositoryNode>();
-            MakeTreeRows(rows, Preference.Instance.RepositoryNodes);
+            MakeTreeRows(rows, new List<RepositoryNode>() { Group });
             Rows.Clear();
             Rows.AddRange(rows);
+
+            foreach (var row in Rows)
+            {
+                if (row.IsRepository)
+                {
+                    OpenRepo(row);
+                }
+            }
+
+            _pathPrefix = Repositories[0].FullPath;
+            foreach (var repo in Repositories)
+            {
+                _pathPrefix = LongestCommonPrefix(_pathPrefix, repo.FullPath);
+            }
         }
 
         public void ToggleNodeIsExpanded(RepositoryNode node)
@@ -115,17 +141,6 @@ namespace SourceGit.ViewModels
                 Native.OS.OpenTerminal(null);
         }
 
-        public void ScanDefaultCloneDir()
-        {
-            var defaultCloneDir = Preference.Instance.GitDefaultCloneDir;
-            if (string.IsNullOrEmpty(defaultCloneDir))
-                App.RaiseException(PopupHost.Active.GetId(), "The default clone dir hasn't been configured!");
-            else if (!Directory.Exists(defaultCloneDir))
-                App.RaiseException(PopupHost.Active.GetId(), $"The default clone dir '{defaultCloneDir}' does not exist!");
-            else if (PopupHost.CanCreatePopup())
-                PopupHost.ShowAndStartPopup(new ScanRepositories(defaultCloneDir));
-        }
-
         public void ClearSearchFilter()
         {
             SearchFilter = string.Empty;
@@ -134,9 +149,8 @@ namespace SourceGit.ViewModels
         public void AddRootNode()
         {
             if (PopupHost.CanCreatePopup())
-                PopupHost.ShowPopup(new CreateGroup(null));
+                PopupHost.ShowPopup(new CreateGroup(Group));
         }
-
         public void MoveNode(RepositoryNode from, RepositoryNode to)
         {
             Preference.Instance.MoveNode(from, to, true);
@@ -147,33 +161,6 @@ namespace SourceGit.ViewModels
         {
             var menu = new ContextMenu();
 
-            if (!node.IsRepository && node.SubNodes.Count > 0)
-            {
-                var openAll = new MenuItem();
-                openAll.Header = App.Text("Welcome.OpenAllInNode");
-                openAll.Icon = App.CreateMenuIcon("Icons.Folder.Open");
-                openAll.Click += (_, e) =>
-                {
-                    OpenAllInNode(App.GetLauncer(), node);
-                    e.Handled = true;
-                };
-
-                menu.Items.Add(openAll);
-                menu.Items.Add(new MenuItem() { Header = "-" });
-
-                var openGroup = new MenuItem();
-                openGroup.Header = App.Text("Welcome.OpenGroup");
-                openGroup.Icon = App.CreateMenuIcon("Icons.Folder.Open");
-                openGroup.Click += (_, e) =>
-                {
-                    OpenGroup(App.GetLauncer(), node);
-                    e.Handled = true;
-                };
-
-                menu.Items.Add(openGroup);
-                menu.Items.Add(new MenuItem() { Header = "-" });
-            }
-
             if (node.IsRepository)
             {
                 var open = new MenuItem();
@@ -181,7 +168,9 @@ namespace SourceGit.ViewModels
                 open.Icon = App.CreateMenuIcon("Icons.Folder.Open");
                 open.Click += (_, e) =>
                 {
-                    App.GetLauncer()?.OpenRepositoryInTab(node, null);
+                    var repo = Repositories.Where(r => r.RepositoryNode.Id == node.Id).FirstOrDefault();
+                    
+                    App.GetLauncer()?.OpenRepositoryInTab(node, new LauncherPage(node, repo));
                     e.Handled = true;
                 };
 
@@ -312,23 +301,149 @@ namespace SourceGit.ViewModels
             }
         }
 
-        private void OpenAllInNode(Launcher launcher, RepositoryNode node)
-        {
-            foreach (var subNode in node.SubNodes)
-            {
-                if (subNode.IsRepository)
-                    launcher.OpenRepositoryInTab(subNode, null);
-                else if (subNode.SubNodes.Count > 0)
-                    OpenAllInNode(launcher, subNode);
-            }
-        }
-
         private void OpenGroup(Launcher launcher, RepositoryNode node)
         {
             launcher.OpenGroupInTab(node);
         }
 
+        internal void OpenRepo(RepositoryNode node)
+        {
+            if (!node.IsRepository)
+            {
+                return;
+            }
+
+            var repo = Repositories.Where(r => r.RepositoryNode.Id == node.Id).FirstOrDefault();
+            if (repo != null)
+            {
+                Data = repo;
+            }
+            else
+            {
+                var gitDir = new Commands.QueryGitDir(node.Id).Result();
+                if (string.IsNullOrEmpty(gitDir))
+                {
+                    App.RaiseException(node.Id, "Given path is not a valid git repository!");
+                    return;
+                }
+
+                repo = new Repository()
+                {
+                    FullPath = node.Id,
+                    GitDir = gitDir,
+                    RepositoryNode = node,
+                };
+
+                repo.Open();
+
+                Data = repo;
+                Repositories.Add(repo);
+
+                if (App.GetLauncer() != null && !App.GetLauncer().ActiveWorkspace.Groups.Contains(Group.Id))
+                {
+                    App.GetLauncer().ActiveWorkspace.Groups.Add(Group.Id);
+                }
+            }
+        }
+
+        internal async void Fetch()
+        {
+            foreach (var repo in Repositories)
+            {
+                var fetch = new Fetch(repo);
+                PopupHost.ShowPopup(fetch);
+                repo.SetBusy(true);
+                fetch.InProgress = true;
+                await fetch.Sure();
+                fetch.InProgress = false;
+                repo.SetBusy(false);
+            }
+
+            PopupHost.Active.Popup = null;
+        }
+
+        internal async void Pull()
+        {
+            foreach (var repo in Repositories)
+            {
+                var pull = new Pull(repo, null);
+                pull.PreAction = Models.DealWithLocalChanges.StashAndReaply;
+                pull.UseRebase = false;
+                PopupHost.ShowPopup(pull);
+                repo.SetBusy(true);
+                pull.InProgress = true;
+                await pull.Sure();
+                pull.InProgress = false;
+                repo.SetBusy(false);
+            }
+
+            PopupHost.Active.Popup = null;
+        }
+
+        internal async void Push()
+        {
+            foreach (var repo in Repositories)
+            {
+                if (repo.CurrentBranch.TrackStatus.Ahead.Count > 0)
+                {
+                    var push = new Push(repo, null);
+                    PopupHost.ShowPopup(push);
+                    repo.SetBusy(true);
+                    push.InProgress = true;
+                    await push.Sure();
+                    push.InProgress = false;
+                    repo.SetBusy(false);
+                }
+            }
+
+            PopupHost.Active.Popup = null;
+        }
+
+        public static string LongestCommonPrefix(string str1, string str2)
+        {
+            if (string.IsNullOrEmpty(str1) || string.IsNullOrEmpty(str2))
+            {
+                return string.Empty;
+            }
+
+            int minLength = Math.Min(str1.Length, str2.Length);
+            int i = 0;
+
+            while (i < minLength && str1[i] == str2[i])
+            {
+                i++;
+            }
+
+            return str1.Substring(0, i);
+        }
+
+        internal void Changes()
+        {
+            if (_workCopyGroup == null)
+                _workCopyGroup = new WorkingCopyGroup(this, Repositories);
+
+            Data = _workCopyGroup;
+
+            MarkWorkingCopyDirtyManually();
+        }
+
+        public void MarkWorkingCopyDirtyManually()
+        {
+            var changes = new List<Change>();
+
+            foreach (Repository repo in Repositories)
+            {
+                changes.AddRange(repo.WorkingCopy.Staged.Where(c => { c.Repo = repo; return true; }));
+                changes.AddRange(repo.WorkingCopy.Unstaged.Where(c => { c.Repo = repo; return true; }));
+            }
+
+            _workCopyGroup.SetData(changes);
+        }
+
         private static Welcome _instance = new Welcome();
         private string _searchFilter = string.Empty;
+        private object _repo = null;
+        private WorkingCopyGroup _workCopyGroup = null;
+        private string _pathPrefix;
     }
 }

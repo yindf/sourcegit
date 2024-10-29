@@ -374,7 +374,7 @@ namespace SourceGit.ViewModels
             collection.Sort((l, r) =>
             {
                 if (l.IsRepository != r.IsRepository)
-                    return l.IsRepository ? 1 : -1;
+                    return l.IsRepository ? -1 : 1;
 
                 return string.Compare(l.Name, r.Name, StringComparison.Ordinal);
             });

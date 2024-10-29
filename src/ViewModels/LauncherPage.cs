@@ -46,7 +46,7 @@ namespace SourceGit.ViewModels
 
         public override bool IsInProgress()
         {
-            if (_data is Repository { IsAutoFetching: true })
+            if (_data is Repository { IsBusy: true })
                 return true;
 
             return base.IsInProgress();

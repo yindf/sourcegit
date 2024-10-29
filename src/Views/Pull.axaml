@@ -9,9 +9,15 @@
              x:Class="SourceGit.Views.Pull"
              x:DataType="vm:Pull">
   <StackPanel Orientation="Vertical" Margin="8,0">
-    <TextBlock FontSize="18"
+    <StackPanel Orientation="Horizontal">
+      <TextBlock FontSize="18"
+                 Classes="bold"
+                 Text="{DynamicResource Text.Pull.Title}"/>
+      <TextBlock FontSize="18"
+               Margin="32,0,0,0"
                Classes="bold"
-               Text="{DynamicResource Text.Pull.Title}"/>
+               Text="{Binding Repo.RepositoryNode.Name}"/>
+    </StackPanel>
     <Grid Margin="0,16,0,0" ColumnDefinitions="140,*">
       <Grid.RowDefinitions>
         <RowDefinition Height="32"/>

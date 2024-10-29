@@ -152,7 +152,7 @@ namespace SourceGit.Views
 
             var set = new HashSet<string>();
             foreach (var c in selected)
-                set.Add(c.Path);
+                set.Add(c.GroupPath);
 
             if (Content is ViewModels.ChangeCollectionAsTree tree)
             {
@@ -182,7 +182,7 @@ namespace SourceGit.Views
                 var lastUnselected = -1;
                 for (int i = changes.Count - 1; i >= 0; i--)
                 {
-                    if (set.Contains(changes[i].Path))
+                    if (set.Contains(changes[i].GroupPath))
                     {
                         if (lastUnselected == -1)
                             continue;
@@ -233,6 +233,20 @@ namespace SourceGit.Views
             else if (grid?.DataContext is Models.Change)
             {
                 RaiseEvent(new RoutedEventArgs(ChangeDoubleTappedEvent));
+            }
+        }
+
+        private void OnPointerMoved(object sender, PointerEventArgs e)
+        {
+            // 当拖拽操作开始时，在源列表中开始拖拽
+            if (e.GetCurrentPoint(sender as Grid).Properties.IsLeftButtonPressed)
+            {
+                var grid = sender as Grid;
+                DataObject dataObject = new DataObject();
+                dataObject.Set("changeCollectionObject", SelectedChanges);
+                DragDrop.DoDragDrop(e, dataObject, DragDropEffects.Move);
+
+                e.Handled = true;
             }
         }
 
