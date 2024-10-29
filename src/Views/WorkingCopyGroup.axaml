@@ -207,7 +207,6 @@
         <Button Grid.Column="1"
                 Classes="icon_button"
                 Margin="4,2,0,0"
-                Click="OnOpenAIAssist"
                 ToolTip.Tip="{DynamicResource Text.AIAssistant.Tip}"
                 ToolTip.Placement="Top"
                 ToolTip.VerticalOffset="0">

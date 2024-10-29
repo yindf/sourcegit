@@ -1051,7 +1051,9 @@ namespace SourceGit.ViewModels
         {
             var menu = new ContextMenu();
 
-            var templateCount = _repos.First().Settings.CommitTemplates.Count;
+            var repo = _repos.First();
+
+            var templateCount = repo.Settings.CommitTemplates.Count;
             if (templateCount == 0)
             {
                 menu.Items.Add(new MenuItem()
@@ -1065,13 +1067,13 @@ namespace SourceGit.ViewModels
             {
                 for (int i = 0; i < templateCount; i++)
                 {
-                    var template = _repos.First().Settings.CommitTemplates[i];
+                    var template = repo.Settings.CommitTemplates[i];
                     var item = new MenuItem();
                     item.Header = new Views.NameHighlightedTextBlock("WorkingCopy.UseCommitTemplate", template.Name);
                     item.Icon = App.CreateMenuIcon("Icons.Code");
                     item.Click += (_, e) =>
                     {
-                        CommitMessage = template.Apply(_staged);
+                        CommitMessage = template.Apply(repo.CurrentBranch, _staged);
                         e.Handled = true;
                     };
                     menu.Items.Add(item);
@@ -1080,7 +1082,7 @@ namespace SourceGit.ViewModels
 
             menu.Items.Add(new MenuItem() { Header = "-" });
 
-            var historiesCount = _repos.First().Settings.CommitMessages.Count;
+            var historiesCount = repo.Settings.CommitMessages.Count;
             if (historiesCount == 0)
             {
                 menu.Items.Add(new MenuItem()
@@ -1094,7 +1096,7 @@ namespace SourceGit.ViewModels
             {
                 for (int i = 0; i < historiesCount; i++)
                 {
-                    var message = _repos.First().Settings.CommitMessages[i];
+                    var message = repo.Settings.CommitMessages[i];
                     var item = new MenuItem();
                     item.Header = message;
                     item.Icon = App.CreateMenuIcon("Icons.Histories");
@@ -1244,7 +1246,7 @@ namespace SourceGit.ViewModels
                     succ = new Commands.Add(repo.FullPath, repo.IncludeUntracked).Exec();
 
                 if (succ)
-                    succ = new Commands.Commit(repo.FullPath, _commitMessage, _useAmend).Exec();
+                    succ = new Commands.Commit(repo.FullPath, _commitMessage, _useAmend, repo.Settings.EnableSignOffForCommit).Exec();
 
                 Dispatcher.UIThread.Post(() =>
                 {
