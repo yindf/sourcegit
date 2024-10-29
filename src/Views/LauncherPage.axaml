@@ -20,6 +20,13 @@
           <DataTemplate DataType="vm:Repository">
             <v:RepositoryToolbar/>
           </DataTemplate>
+
+          <DataTemplate DataType="vm:RepositoryGroup">
+            <ContentControl Content="{Binding Data}">
+                <v:RepositoryToolbar/>
+            </ContentControl>
+          </DataTemplate>
+          
         </ContentControl.DataTemplates>
       </ContentControl>
     </Border>
@@ -35,6 +42,11 @@
           <DataTemplate DataType="vm:Repository">
             <v:Repository/>
           </DataTemplate>
+
+          <DataTemplate DataType="vm:RepositoryGroup">
+            <v:RepositoryGroup/>
+          </DataTemplate>
+          
         </ContentControl.DataTemplates>
       </ContentControl>
     </Border>

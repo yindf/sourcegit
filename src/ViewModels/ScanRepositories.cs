@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Threading;
 
@@ -43,6 +44,15 @@ namespace SourceGit.ViewModels
                 {
                     var normalizedRoot = rootDir.FullName.Replace("\\", "/");
 
+                    if (founded.Any(f => normalizedRoot == new DirectoryInfo(f).FullName.Replace("\\", "/")))
+                    {
+                        var relative = Path.GetFileName(normalizedRoot);
+                        var f = normalizedRoot;
+                        normalizedRoot = Path.GetDirectoryName(normalizedRoot).Replace("\\", "/");
+                        var group = FindOrCreateGroupRecursive(Preference.Instance.RepositoryNodes, relative);
+                        Preference.Instance.FindOrAddNodeByRepositoryPath(f, group, false);
+                    }
+
                     foreach (var f in founded)
                     {
                         var parent = new DirectoryInfo(f).Parent!.FullName.Replace("\\", "/");
@@ -79,29 +89,29 @@ namespace SourceGit.ViewModels
 
         private void GetUnmanagedRepositories(DirectoryInfo dir, List<string> outs, EnumerationOptions opts, int depth = 0)
         {
+            if (dir.LinkTarget != null)
+            {
+                return;
+            }
+
+            SetProgressDescription($"Scanning {dir.FullName}...");
+
+            var normalizedSelf = dir.FullName.Replace("\\", "/");
+            var gitDir = Path.Combine(dir.FullName, ".git");
+            if (Directory.Exists(gitDir) || File.Exists(gitDir))
+            {
+                var test = new Commands.QueryRepositoryRootPath(dir.FullName).ReadToEnd();
+                if (test.IsSuccess && !string.IsNullOrEmpty(test.StdOut))
+                {
+                    var normalized = test.StdOut.Trim().Replace("\\", "/");
+                    if (!_managed.Contains(normalizedSelf))
+                        outs.Add(normalized);
+                }
+            }
+
             var subdirs = dir.GetDirectories("*", opts);
             foreach (var subdir in subdirs)
             {
-                SetProgressDescription($"Scanning {subdir.FullName}...");
-
-                var normalizedSelf = subdir.FullName.Replace("\\", "/");
-                if (_managed.Contains(normalizedSelf))
-                    continue;
-
-                var gitDir = Path.Combine(subdir.FullName, ".git");
-                if (Directory.Exists(gitDir) || File.Exists(gitDir))
-                {
-                    var test = new Commands.QueryRepositoryRootPath(subdir.FullName).ReadToEnd();
-                    if (test.IsSuccess && !string.IsNullOrEmpty(test.StdOut))
-                    {
-                        var normalized = test.StdOut.Trim().Replace("\\", "/");
-                        if (!_managed.Contains(normalizedSelf))
-                            outs.Add(normalized);
-
-                        continue;
-                    }
-                }
-
                 if (depth < 8)
                     GetUnmanagedRepositories(subdir, outs, opts, depth + 1);
             }
@@ -138,7 +148,7 @@ namespace SourceGit.ViewModels
             collection.Sort((l, r) =>
             {
                 if (l.IsRepository != r.IsRepository)
-                    return l.IsRepository ? 1 : -1;
+                    return l.IsRepository ? -1 : 1;
 
                 return string.Compare(l.Name, r.Name, StringComparison.Ordinal);
             });

@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using System;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace SourceGit.ViewModels
 {
@@ -59,7 +60,9 @@ namespace SourceGit.ViewModels
                     var finished = await task;
                     _popup.InProgress = false;
                     if (finished)
+                    {
                         Popup = null;
+                    }
                 }
                 else
                 {

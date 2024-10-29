@@ -20,6 +20,7 @@ using AvaloniaEdit.Editing;
 using AvaloniaEdit.Rendering;
 using AvaloniaEdit.TextMate;
 using AvaloniaEdit.Utils;
+using SourceGit.Models;
 
 namespace SourceGit.Views
 {
@@ -1232,13 +1233,24 @@ namespace SourceGit.Views
             if (!selection.HasChanges)
                 return;
 
-            var repoView = this.FindAncestorOfType<Repository>();
-            if (repoView == null)
-                return;
+            ViewModels.Repository repo = null;
+            if (App.GetLauncer().ActivePage.Data is ViewModels.RepositoryGroup group)
+            {
+                if (DataContext is TextDiff textDiff)
+                {
+                    repo = (App.GetLauncer().ActivePage.Data as ViewModels.RepositoryGroup).Repositories.Find(r => r.FullPath == textDiff.Repo);
+                }
+            }
+            else
+            {
+                var repoView = this.FindAncestorOfType<Repository>();
+                if (repoView == null)
+                    return;
 
-            var repo = repoView.DataContext as ViewModels.Repository;
-            if (repo == null)
-                return;
+                repo = repoView.DataContext as ViewModels.Repository;
+                if (repo == null)
+                    return;
+            }
 
             repo.SetWatcherEnabled(false);
 
@@ -1290,13 +1302,24 @@ namespace SourceGit.Views
             if (!selection.HasChanges)
                 return;
 
-            var repoView = this.FindAncestorOfType<Repository>();
-            if (repoView == null)
-                return;
+            ViewModels.Repository repo = null;
+            if (App.GetLauncer().ActivePage.Data is ViewModels.RepositoryGroup group)
+            {
+                if (DataContext is TextDiff textDiff)
+                {
+                    repo = (App.GetLauncer().ActivePage.Data as ViewModels.RepositoryGroup).Repositories.Find(r => r.FullPath == textDiff.Repo);
+                }
+            }
+            else
+            {
+                var repoView = this.FindAncestorOfType<Repository>();
+                if (repoView == null)
+                    return;
 
-            var repo = repoView.DataContext as ViewModels.Repository;
-            if (repo == null)
-                return;
+                repo = repoView.DataContext as ViewModels.Repository;
+                if (repo == null)
+                    return;
+            }
 
             repo.SetWatcherEnabled(false);
 
@@ -1344,13 +1367,24 @@ namespace SourceGit.Views
             if (!selection.HasChanges)
                 return;
 
-            var repoView = this.FindAncestorOfType<Repository>();
-            if (repoView == null)
-                return;
+            ViewModels.Repository repo = null;
+            if (App.GetLauncer().ActivePage.Data is ViewModels.RepositoryGroup group)
+            {
+                if (DataContext is TextDiff textDiff)
+                {
+                    repo = (App.GetLauncer().ActivePage.Data as ViewModels.RepositoryGroup).Repositories.Find(r => r.FullPath == textDiff.Repo);
+                }
+            }
+            else
+            {
+                var repoView = this.FindAncestorOfType<Repository>();
+                if (repoView == null)
+                    return;
 
-            var repo = repoView.DataContext as ViewModels.Repository;
-            if (repo == null)
-                return;
+                repo = repoView.DataContext as ViewModels.Repository;
+                if (repo == null)
+                    return;
+            }
 
             repo.SetWatcherEnabled(false);
 

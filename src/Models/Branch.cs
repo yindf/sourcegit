@@ -10,7 +10,7 @@ namespace SourceGit.Models
         public override string ToString()
         {
             if (Ahead.Count == 0 && Behind.Count == 0)
-                return string.Empty;
+                return "✔";
 
             var track = "";
             if (Ahead.Count > 0)

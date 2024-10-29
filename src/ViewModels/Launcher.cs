@@ -68,6 +68,16 @@ namespace SourceGit.ViewModels
                     OpenRepositoryInTab(node, null);
                 }
 
+                var groups = ActiveWorkspace.Groups;
+                foreach (var group in groups)
+                {
+                    var node = pref.FindNode(group);
+                    if (node != null)
+                    {
+                        OpenGroupInTab(node);
+                    }
+                }
+
                 var activeIdx = ActiveWorkspace.ActiveIdx;
                 if (activeIdx >= 0 && activeIdx < Pages.Count)
                 {
@@ -289,13 +299,14 @@ namespace SourceGit.ViewModels
             {
                 FullPath = node.Id,
                 GitDir = gitDir,
+                RepositoryNode = node,
             };
 
             repo.Open();
 
             if (page == null)
             {
-                if (ActivePage == null || ActivePage.Node.IsRepository)
+                if (ActivePage == null)
                 {
                     page = new LauncherPage(node, repo);
                     Pages.Add(page);
@@ -311,6 +322,7 @@ namespace SourceGit.ViewModels
             {
                 page.Node = node;
                 page.Data = repo;
+                Pages.Add(page);
             }
 
             ActivePage = page;
@@ -324,6 +336,39 @@ namespace SourceGit.ViewModels
 
             if (!_ignoreIndexChange)
                 ActiveWorkspace.ActiveIdx = ActiveWorkspace.Repositories.IndexOf(node.Id);
+        }
+
+        public void OpenGroupInTab(RepositoryNode node)
+        {
+            foreach (var one in Pages)
+            {
+                if (one.Node.Id == node.Id)
+                {
+                    ActivePage = one;
+                    return;
+                }
+            }
+
+            if (node.IsRepository)
+            {
+                App.RaiseException(node.Id, "Node is not a group.");
+                return;
+            }
+
+            LauncherPage page;
+            if (ActivePage == null || ActivePage.Node.IsRepository)
+            {
+                page = new LauncherPage(node, null);
+                Pages.Add(page);
+            }
+            else
+            {
+                page = ActivePage;
+                page.Node = node;
+                page.Data = new RepositoryGroup(node);
+            }
+
+            ActivePage = page;
         }
 
         public void DispatchNotification(string pageId, string message, bool isError)

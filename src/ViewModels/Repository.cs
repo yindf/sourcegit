@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,6 +13,7 @@ using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 
 using CommunityToolkit.Mvvm.ComponentModel;
+using SourceGit.Models;
 
 namespace SourceGit.ViewModels
 {
@@ -33,6 +35,8 @@ namespace SourceGit.ViewModels
                 }
             }
         }
+
+        public RepositoryNode RepositoryNode { get; set; }
 
         public string GitDir
         {
@@ -173,7 +177,7 @@ namespace SourceGit.ViewModels
         public int LocalChangesCount
         {
             get => _localChangesCount;
-            private set => SetProperty(ref _localChangesCount, value);
+            private set { SetProperty(ref _localChangesCount, value); }
         }
 
         public int StashesCount
@@ -350,10 +354,21 @@ namespace SourceGit.ViewModels
             }
         }
 
-        public bool IsAutoFetching
+        public bool IsBusy
         {
             get;
             private set;
+        }
+
+        public void SetBusy(bool busy)
+        {
+            IsBusy = busy;
+            Dispatcher.UIThread.Invoke(() => { OnPropertyChanged(nameof(IsBusy)); });
+        }
+
+        public WorkingCopy WorkingCopy
+        {
+            get => _workingCopy;
         }
 
         public void Open()
@@ -392,7 +407,7 @@ namespace SourceGit.ViewModels
             _inProgressContext = null;
             _hasUnsolvedConflicts = false;
 
-            _autoFetchTimer = new Timer(AutoFetchImpl, null, 5000, 5000);
+            _autoFetchTimer = new Timer(AutoFetchImpl, null, new Random().Next(5000, 10000), 5000);
             RefreshAll();
         }
 
@@ -449,12 +464,11 @@ namespace SourceGit.ViewModels
                 RefreshBranches();
                 RefreshTags();
                 RefreshCommits();
+                RefreshSubmodules();
+                RefreshWorktrees();
+                RefreshWorkingCopyChanges();
+                RefreshStashes();
             });
-
-            Task.Run(RefreshSubmodules);
-            Task.Run(RefreshWorktrees);
-            Task.Run(RefreshWorkingCopyChanges);
-            Task.Run(RefreshStashes);
         }
 
         public void OpenInFileManager()
@@ -888,6 +902,7 @@ namespace SourceGit.ViewModels
                     _histories.IsLoading = false;
                     _histories.Commits = commits;
                     _histories.Graph = graph;
+                    _histories.AutoSelectedCommit = commits.FirstOrDefault();
                 }
             });
         }
@@ -2099,7 +2114,7 @@ namespace SourceGit.ViewModels
 
         private void AutoFetchImpl(object sender)
         {
-            if (!_settings.EnableAutoFetch || IsAutoFetching)
+            if (!_settings.EnableAutoFetch || IsBusy)
                 return;
 
             var lockFile = Path.Combine(_gitDir, "index.lock");
@@ -2111,12 +2126,10 @@ namespace SourceGit.ViewModels
             if (desire > now)
                 return;
 
-            IsAutoFetching = true;
-            Dispatcher.UIThread.Invoke(() => OnPropertyChanged(nameof(IsAutoFetching)));
+            SetBusy(true);
             new Commands.Fetch(_fullpath, "--all", true, false, null) { RaiseError = false }.Exec();
             _lastFetchTime = DateTime.Now;
-            IsAutoFetching = false;
-            Dispatcher.UIThread.Invoke(() => OnPropertyChanged(nameof(IsAutoFetching)));
+            SetBusy(false);
         }
 
         private string _fullpath = string.Empty;

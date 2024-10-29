@@ -6,8 +6,8 @@
              xmlns:v="using:SourceGit.Views"
              xmlns:c="using:SourceGit.Converters"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
-             x:Class="SourceGit.Views.WorkingCopy"
-             x:DataType="vm:WorkingCopy">
+             x:Class="SourceGit.Views.WorkingCopyGroup"
+             x:DataType="vm:WorkingCopyGroup">
   <Grid>
     <Grid.ColumnDefinitions>
       <ColumnDefinition Width="{Binding Source={x:Static vm:Preference.Instance}, Path=Layout.WorkingCopyLeftWidth, Mode=TwoWay}" MinWidth="300"/>
@@ -80,7 +80,6 @@
                               ChangeDoubleTapped="OnUnstagedChangeDoubleTapped"
                               KeyDown="OnUnstagedKeyDown"/>
 
-
       <!-- Splitter -->
       <GridSplitter Grid.Row="2"
                     MinWidth="1"
@@ -88,7 +87,7 @@
                     Background="Transparent"
                     BorderThickness="0,0,1,0"
                     BorderBrush="{DynamicResource Brush.Border0}"/>
-
+      
       <!-- Staged Toolbar -->
       <Border Grid.Row="2" BorderThickness="0,1" BorderBrush="{DynamicResource Brush.Border0}">
         <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto,Auto,Auto">
@@ -213,16 +212,6 @@
                 ToolTip.Placement="Top"
                 ToolTip.VerticalOffset="0">
           <Path Width="15" Height="15" Data="{StaticResource Icons.AIAssist}"/>
-        </Button>
-
-        <Button Grid.Column="2"
-                Classes="icon_button"
-                Margin="0,2,0,0"
-                Click="OnOpenConventionalCommitHelper"
-                ToolTip.Tip="{DynamicResource Text.ConventionalCommit}"
-                ToolTip.Placement="Top"
-                ToolTip.VerticalOffset="0">
-          <Path Width="15" Height="15" Data="{StaticResource Icons.CommitMessageGenerator}"/>
         </Button>
 
         <CheckBox Grid.Column="3"

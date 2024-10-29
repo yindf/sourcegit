@@ -1,4 +1,5 @@
 ﻿using System;
+using SourceGit.ViewModels;
 
 namespace SourceGit.Models
 {
@@ -30,9 +31,50 @@ namespace SourceGit.Models
 
     public class Change
     {
+        public Change() { }
+        public Change(Change c)
+        {
+            Repo = c.Repo;
+            Index = c.Index;
+            WorkTree = c.WorkTree;
+            Path = c.Path;
+            OriginalPath = c.OriginalPath;
+            DataForAmend = c.DataForAmend;
+        }
+
+        public Repository Repo { get; set; }
         public ChangeState Index { get; set; } = ChangeState.None;
         public ChangeState WorkTree { get; set; } = ChangeState.None;
-        public string Path { get; set; } = "";
+        public string Path { get; set; }
+
+        private string _groupPath;
+        public string GroupPath
+        {
+            get
+            {
+                if (Repo == null)
+                {
+                    return Path;
+                }
+                else
+                {
+                    if (_groupPath == null)
+                    {
+                        if (App.GetLauncer().ActivePage.Data is RepositoryGroup group)
+                        {
+                            _groupPath = $"{Repo.FullPath.Substring(group.PathPrefix.Length)}/{Path}".Trim('/');
+                        }
+                        else
+                        {
+                            _groupPath = $"{Repo.FullPath}/{Path}".Trim('/');
+                        }
+                    }
+
+                    return _groupPath;
+                }
+            }
+        }
+
         public string OriginalPath { get; set; } = "";
         public ChangeDataForAmend DataForAmend { get; set; } = null;
 

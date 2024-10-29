@@ -49,7 +49,13 @@ namespace SourceGit.Models
             if (enabled)
             {
                 if (_lockCount > 0)
+                {
                     _lockCount--;
+                    if (_lockCount == 0)
+                    {
+                        Tick(this);
+                    }
+                }
             }
             else
             {

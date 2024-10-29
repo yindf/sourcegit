@@ -6,9 +6,9 @@ using SourceGit.Models;
 
 namespace SourceGit.Views
 {
-    public partial class WorkingCopy : UserControl
+    public partial class WorkingCopyGroup : UserControl
     {
-        public WorkingCopy()
+        public WorkingCopyGroup()
         {
             InitializeComponent();
 
@@ -20,7 +20,7 @@ namespace SourceGit.Views
 
         private void OnOpenCommitMessagePicker(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button && DataContext is ViewModels.WorkingCopy vm)
+            if (sender is Button button && DataContext is ViewModels.WorkingCopyGroup vm)
             {
                 var menu = vm.CreateContextMenuForCommitMessages();
                 menu.Placement = PlacementMode.TopEdgeAlignedLeft;
@@ -31,7 +31,7 @@ namespace SourceGit.Views
 
         private void OnUnstagedContextRequested(object sender, ContextRequestedEventArgs e)
         {
-            if (DataContext is ViewModels.WorkingCopy vm)
+            if (DataContext is ViewModels.WorkingCopyGroup vm)
             {
                 var menu = vm.CreateContextMenuForUnstagedChanges();
                 (sender as Control)?.OpenContextMenu(menu);
@@ -41,7 +41,7 @@ namespace SourceGit.Views
 
         private void OnStagedContextRequested(object sender, ContextRequestedEventArgs e)
         {
-            if (DataContext is ViewModels.WorkingCopy vm)
+            if (DataContext is ViewModels.WorkingCopyGroup vm)
             {
                 var menu = vm.CreateContextMenuForStagedChanges();
                 (sender as Control)?.OpenContextMenu(menu);
@@ -51,7 +51,7 @@ namespace SourceGit.Views
 
         private void OnUnstagedChangeDoubleTapped(object _, RoutedEventArgs e)
         {
-            if (DataContext is ViewModels.WorkingCopy vm)
+            if (DataContext is ViewModels.WorkingCopyGroup vm)
             {
                 var next = UnstagedChangesView.GetNextChangeWithoutSelection();
                 vm.StageSelected(next);
@@ -62,7 +62,7 @@ namespace SourceGit.Views
 
         private void OnStagedChangeDoubleTapped(object _, RoutedEventArgs e)
         {
-            if (DataContext is ViewModels.WorkingCopy vm)
+            if (DataContext is ViewModels.WorkingCopyGroup vm)
             {
                 var next = StagedChangesView.GetNextChangeWithoutSelection();
                 vm.UnstageSelected(next);
@@ -73,7 +73,7 @@ namespace SourceGit.Views
 
         private void OnUnstagedKeyDown(object _, KeyEventArgs e)
         {
-            if (DataContext is ViewModels.WorkingCopy vm)
+            if (DataContext is ViewModels.WorkingCopyGroup vm)
             {
                 if (e.Key is Key.Space or Key.Enter)
                 {
@@ -94,7 +94,7 @@ namespace SourceGit.Views
 
         private void OnStagedKeyDown(object _, KeyEventArgs e)
         {
-            if (DataContext is ViewModels.WorkingCopy vm && e.Key is Key.Space or Key.Enter)
+            if (DataContext is ViewModels.WorkingCopyGroup vm && e.Key is Key.Space or Key.Enter)
             {
                 var next = StagedChangesView.GetNextChangeWithoutSelection();
                 vm.UnstageSelected(next);
@@ -105,7 +105,7 @@ namespace SourceGit.Views
 
         private void OnStageSelectedButtonClicked(object _, RoutedEventArgs e)
         {
-            if (DataContext is ViewModels.WorkingCopy vm)
+            if (DataContext is ViewModels.WorkingCopyGroup vm)
             {
                 var next = UnstagedChangesView.GetNextChangeWithoutSelection();
                 vm.StageSelected(next);
@@ -117,7 +117,7 @@ namespace SourceGit.Views
 
         private void OnUnstageSelectedButtonClicked(object _, RoutedEventArgs e)
         {
-            if (DataContext is ViewModels.WorkingCopy vm)
+            if (DataContext is ViewModels.WorkingCopyGroup vm)
             {
                 var next = StagedChangesView.GetNextChangeWithoutSelection();
                 vm.UnstageSelected(next);
@@ -135,7 +135,7 @@ namespace SourceGit.Views
                 return;
             }
 
-            if (DataContext is ViewModels.WorkingCopy vm)
+            if (DataContext is ViewModels.WorkingCopyGroup vm)
             {
                 if (vm.Staged is { Count: > 0 })
                 {
@@ -152,24 +152,9 @@ namespace SourceGit.Views
             e.Handled = true;
         }
 
-        private void OnOpenConventionalCommitHelper(object _, RoutedEventArgs e)
-        {
-            if (DataContext is ViewModels.WorkingCopy vm)
-            {
-                var dialog = new ConventionalCommitMessageBuilder() 
-                { 
-                    DataContext = new ViewModels.ConventionalCommitMessageBuilder(vm) 
-                };
-
-                App.OpenDialog(dialog);
-            }
-
-            e.Handled = true;
-        }
-
         private void OnDropToStage(object sender, DragEventArgs e)
         {
-            if (DataContext is ViewModels.WorkingCopy vm && sender is ChangeCollectionView view && e.Data.Contains("changeCollectionObject"))
+            if (DataContext is ViewModels.WorkingCopyGroup vm && sender is ChangeCollectionView view && e.Data.Contains("changeCollectionObject"))
             {
                 vm.StageChanges(e.Data.Get("changeCollectionObject") as List<Change>, null);
             }
@@ -177,7 +162,7 @@ namespace SourceGit.Views
 
         private void OnDropToUnstage(object sender, DragEventArgs e)
         {
-            if (DataContext is ViewModels.WorkingCopy vm && sender is ChangeCollectionView view && e.Data.Contains("changeCollectionObject"))
+            if (DataContext is ViewModels.WorkingCopyGroup vm && sender is ChangeCollectionView view && e.Data.Contains("changeCollectionObject"))
             {
                 vm.UnstageChanges(e.Data.Get("changeCollectionObject") as List<Change>, null);
             }
