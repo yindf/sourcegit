@@ -1370,8 +1370,9 @@ namespace SourceGit.ViewModels
                 };
                 menu.Items.Add(checkout);
 
+                var worktree = _worktrees.Find(x => x.Branch == branch.FullName);
                 var upstream = _branches.Find(x => x.FullName == branch.Upstream);
-                if (upstream != null)
+                if (upstream != null && worktree == null)
                 {
                     var fastForward = new MenuItem();
                     fastForward.Header = new Views.NameHighlightedTextBlock("BranchCM.FastForward", upstream.FriendlyName);
@@ -2127,7 +2128,7 @@ namespace SourceGit.ViewModels
                 return;
 
             SetBusy(true);
-            new Commands.Fetch(_fullpath, "--all", true, false, null) { RaiseError = false }.Exec();
+            new Commands.Fetch(_fullpath, "--all", false, null) { RaiseError = false }.Exec();
             _lastFetchTime = DateTime.Now;
             SetBusy(false);
         }
