@@ -6,9 +6,9 @@ using SourceGit.Models;
 
 namespace SourceGit.Views
 {
-    public partial class WorkingCopy : UserControl
+    public partial class WorkingCopyGroup : UserControl
     {
-        public WorkingCopy()
+        public WorkingCopyGroup()
         {
             InitializeComponent();
 
@@ -18,54 +18,40 @@ namespace SourceGit.Views
             UnstagedChangesView.AddHandler(DragDrop.DropEvent, OnDropToUnstage, RoutingStrategies.Bubble | RoutingStrategies.Direct);
         }
 
-        private void OnMainLayoutSizeChanged(object sender, SizeChangedEventArgs e)
-        {
-            var grid = sender as Grid;
-            if (grid == null)
-                return;
-
-            var layout = ViewModels.Preference.Instance.Layout;
-            var width = grid.Bounds.Width;
-            var maxLeft = width - 304;
-
-            if (layout.WorkingCopyLeftWidth.Value - maxLeft > 1.0)
-                layout.WorkingCopyLeftWidth = new GridLength(maxLeft, GridUnitType.Pixel);
-        }
-
         private void OnOpenCommitMessagePicker(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button && DataContext is ViewModels.WorkingCopy vm)
+            if (sender is Button button && DataContext is ViewModels.WorkingCopyGroup vm)
             {
                 var menu = vm.CreateContextMenuForCommitMessages();
                 menu.Placement = PlacementMode.TopEdgeAlignedLeft;
-                menu?.Open(button);
+                button.OpenContextMenu(menu);
                 e.Handled = true;
             }
         }
 
         private void OnUnstagedContextRequested(object sender, ContextRequestedEventArgs e)
         {
-            if (DataContext is ViewModels.WorkingCopy vm && sender is Control control)
+            if (DataContext is ViewModels.WorkingCopyGroup vm)
             {
                 var menu = vm.CreateContextMenuForUnstagedChanges();
-                menu?.Open(control);
+                (sender as Control)?.OpenContextMenu(menu);
                 e.Handled = true;
             }
         }
 
         private void OnStagedContextRequested(object sender, ContextRequestedEventArgs e)
         {
-            if (DataContext is ViewModels.WorkingCopy vm && sender is Control control)
+            if (DataContext is ViewModels.WorkingCopyGroup vm)
             {
                 var menu = vm.CreateContextMenuForStagedChanges();
-                menu?.Open(control);
+                (sender as Control)?.OpenContextMenu(menu);
                 e.Handled = true;
             }
         }
 
         private void OnUnstagedChangeDoubleTapped(object _, RoutedEventArgs e)
         {
-            if (DataContext is ViewModels.WorkingCopy vm)
+            if (DataContext is ViewModels.WorkingCopyGroup vm)
             {
                 var next = UnstagedChangesView.GetNextChangeWithoutSelection();
                 vm.StageSelected(next);
@@ -76,7 +62,7 @@ namespace SourceGit.Views
 
         private void OnStagedChangeDoubleTapped(object _, RoutedEventArgs e)
         {
-            if (DataContext is ViewModels.WorkingCopy vm)
+            if (DataContext is ViewModels.WorkingCopyGroup vm)
             {
                 var next = StagedChangesView.GetNextChangeWithoutSelection();
                 vm.UnstageSelected(next);
@@ -87,7 +73,7 @@ namespace SourceGit.Views
 
         private void OnUnstagedKeyDown(object _, KeyEventArgs e)
         {
-            if (DataContext is ViewModels.WorkingCopy vm)
+            if (DataContext is ViewModels.WorkingCopyGroup vm)
             {
                 if (e.Key is Key.Space or Key.Enter)
                 {
@@ -108,7 +94,7 @@ namespace SourceGit.Views
 
         private void OnStagedKeyDown(object _, KeyEventArgs e)
         {
-            if (DataContext is ViewModels.WorkingCopy vm && e.Key is Key.Space or Key.Enter)
+            if (DataContext is ViewModels.WorkingCopyGroup vm && e.Key is Key.Space or Key.Enter)
             {
                 var next = StagedChangesView.GetNextChangeWithoutSelection();
                 vm.UnstageSelected(next);
@@ -119,7 +105,7 @@ namespace SourceGit.Views
 
         private void OnStageSelectedButtonClicked(object _, RoutedEventArgs e)
         {
-            if (DataContext is ViewModels.WorkingCopy vm)
+            if (DataContext is ViewModels.WorkingCopyGroup vm)
             {
                 var next = UnstagedChangesView.GetNextChangeWithoutSelection();
                 vm.StageSelected(next);
@@ -131,7 +117,7 @@ namespace SourceGit.Views
 
         private void OnUnstageSelectedButtonClicked(object _, RoutedEventArgs e)
         {
-            if (DataContext is ViewModels.WorkingCopy vm)
+            if (DataContext is ViewModels.WorkingCopyGroup vm)
             {
                 var next = StagedChangesView.GetNextChangeWithoutSelection();
                 vm.UnstageSelected(next);
@@ -141,27 +127,26 @@ namespace SourceGit.Views
             e.Handled = true;
         }
 
-        private void OnOpenOpenAIHelper(object sender, RoutedEventArgs e)
+        private void OnOpenAIAssist(object _, RoutedEventArgs e)
         {
-            if (DataContext is ViewModels.WorkingCopy vm && sender is Control control)
+            if (!Models.OpenAI.IsValid)
             {
-                var menu = vm.CreateContextForOpenAI();
-                menu?.Open(control);
+                App.RaiseException(null, "Bad configuration for OpenAI");
+                return;
             }
 
-            e.Handled = true;
-        }
-
-        private void OnOpenConventionalCommitHelper(object _, RoutedEventArgs e)
-        {
-            if (DataContext is ViewModels.WorkingCopy vm)
+            if (DataContext is ViewModels.WorkingCopyGroup vm)
             {
-                var dialog = new ConventionalCommitMessageBuilder()
+                if (vm.Staged is { Count: > 0 })
                 {
-                    DataContext = new ViewModels.ConventionalCommitMessageBuilder(vm)
-                };
-
-                App.OpenDialog(dialog);
+                    var dialog = new AIAssistant() { DataContext = vm };
+                    dialog.GenerateCommitMessage();
+                    App.OpenDialog(dialog);
+                }
+                else
+                {
+                    App.RaiseException(null, "No files added to commit!");
+                }
             }
 
             e.Handled = true;
@@ -169,7 +154,7 @@ namespace SourceGit.Views
 
         private void OnDropToStage(object sender, DragEventArgs e)
         {
-            if (DataContext is ViewModels.WorkingCopy vm && sender is ChangeCollectionView view && e.Data.Contains("changeCollectionObject"))
+            if (DataContext is ViewModels.WorkingCopyGroup vm && sender is ChangeCollectionView view && e.Data.Contains("changeCollectionObject"))
             {
                 vm.StageChanges(e.Data.Get("changeCollectionObject") as List<Change>, null);
             }
@@ -177,7 +162,7 @@ namespace SourceGit.Views
 
         private void OnDropToUnstage(object sender, DragEventArgs e)
         {
-            if (DataContext is ViewModels.WorkingCopy vm && sender is ChangeCollectionView view && e.Data.Contains("changeCollectionObject"))
+            if (DataContext is ViewModels.WorkingCopyGroup vm && sender is ChangeCollectionView view && e.Data.Contains("changeCollectionObject"))
             {
                 vm.UnstageChanges(e.Data.Get("changeCollectionObject") as List<Change>, null);
             }

@@ -25,7 +25,7 @@ namespace SourceGit.ViewModels
 
         public ChangeTreeNode(Models.Change c, int depth)
         {
-            FullPath = c.Path;
+            FullPath = c.GroupPath;
             Depth = depth;
             Change = c;
             IsExpanded = false;
@@ -45,7 +45,7 @@ namespace SourceGit.ViewModels
 
             foreach (var c in changes)
             {
-                var sepIdx = c.Path.IndexOf('/', StringComparison.Ordinal);
+                var sepIdx = c.GroupPath.IndexOf('/', StringComparison.Ordinal);
                 if (sepIdx == -1)
                 {
                     nodes.Add(new ChangeTreeNode(c, 0));
@@ -57,7 +57,7 @@ namespace SourceGit.ViewModels
 
                     while (sepIdx != -1)
                     {
-                        var folder = c.Path.Substring(0, sepIdx);
+                        var folder = c.GroupPath.Substring(0, sepIdx);
                         if (folders.TryGetValue(folder, out var value))
                         {
                             lastFolder = value;
@@ -77,7 +77,7 @@ namespace SourceGit.ViewModels
                         }
 
                         depth++;
-                        sepIdx = c.Path.IndexOf('/', sepIdx + 1);
+                        sepIdx = c.GroupPath.IndexOf('/', sepIdx + 1);
                     }
 
                     lastFolder?.Children.Add(new ChangeTreeNode(c, depth));

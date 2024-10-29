@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
-
 using Avalonia.Threading;
 
 namespace SourceGit.ViewModels
@@ -30,8 +29,8 @@ namespace SourceGit.ViewModels
 
             return Task.Run(() =>
             {
-                var watch = new Stopwatch();
-                watch.Start();
+                // If it is too fast, the panel will disappear very quickly, then we'll have a bad experience.
+                Task.Delay(500).Wait();
 
                 var rootDir = new DirectoryInfo(RootDir);
                 var founded = new List<string>();
@@ -44,6 +43,15 @@ namespace SourceGit.ViewModels
                 Dispatcher.UIThread.Invoke(() =>
                 {
                     var normalizedRoot = rootDir.FullName.Replace("\\", "/");
+
+                    if (founded.Any(f => normalizedRoot == new DirectoryInfo(f).FullName.Replace("\\", "/")))
+                    {
+                        var relative = Path.GetFileName(normalizedRoot);
+                        var f = normalizedRoot;
+                        normalizedRoot = Path.GetDirectoryName(normalizedRoot).Replace("\\", "/");
+                        var group = FindOrCreateGroupRecursive(Preference.Instance.RepositoryNodes, relative);
+                        Preference.Instance.FindOrAddNodeByRepositoryPath(f, group, false);
+                    }
 
                     foreach (var f in founded)
                     {
@@ -64,12 +72,6 @@ namespace SourceGit.ViewModels
                     Welcome.Instance.Refresh();
                 });
 
-                // Make sure this task takes at least 0.5s to avoid that the popup panel do not disappear very quickly.
-                var remain = 500 - (int)watch.Elapsed.TotalMilliseconds;
-                watch.Stop();
-                if (remain > 0)
-                    Task.Delay(remain).Wait();
-
                 return true;
             });
         }
@@ -87,37 +89,30 @@ namespace SourceGit.ViewModels
 
         private void GetUnmanagedRepositories(DirectoryInfo dir, List<string> outs, EnumerationOptions opts, int depth = 0)
         {
+            if (dir.LinkTarget != null)
+            {
+                return;
+            }
+
+            SetProgressDescription($"Scanning {dir.FullName}...");
+
+            var normalizedSelf = dir.FullName.Replace("\\", "/");
+            var gitDir = Path.Combine(dir.FullName, ".git");
+            if (Directory.Exists(gitDir) || File.Exists(gitDir))
+            {
+                var test = new Commands.QueryRepositoryRootPath(dir.FullName).ReadToEnd();
+                if (test.IsSuccess && !string.IsNullOrEmpty(test.StdOut))
+                {
+                    var normalized = test.StdOut.Trim().Replace("\\", "/");
+                    if (!_managed.Contains(normalizedSelf))
+                        outs.Add(normalized);
+                }
+            }
+
             var subdirs = dir.GetDirectories("*", opts);
             foreach (var subdir in subdirs)
             {
-                if (subdir.Name.Equals("node_modules", StringComparison.Ordinal) ||
-                    subdir.Name.Equals(".svn", StringComparison.Ordinal) ||
-                    subdir.Name.Equals(".vs", StringComparison.Ordinal) ||
-                    subdir.Name.Equals(".vscode", StringComparison.Ordinal) ||
-                    subdir.Name.Equals(".idea", StringComparison.Ordinal))
-                    continue;
-
-                SetProgressDescription($"Scanning {subdir.FullName}...");
-
-                var normalizedSelf = subdir.FullName.Replace("\\", "/");
-                if (_managed.Contains(normalizedSelf))
-                    continue;
-
-                var gitDir = Path.Combine(subdir.FullName, ".git");
-                if (Directory.Exists(gitDir) || File.Exists(gitDir))
-                {
-                    var test = new Commands.QueryRepositoryRootPath(subdir.FullName).ReadToEnd();
-                    if (test.IsSuccess && !string.IsNullOrEmpty(test.StdOut))
-                    {
-                        var normalized = test.StdOut.Trim().Replace("\\", "/");
-                        if (!_managed.Contains(normalized))
-                            outs.Add(normalized);
-                    }
-
-                    continue;
-                }
-
-                if (depth < 5)
+                if (depth < 8)
                     GetUnmanagedRepositories(subdir, outs, opts, depth + 1);
             }
         }
@@ -153,7 +148,7 @@ namespace SourceGit.ViewModels
             collection.Sort((l, r) =>
             {
                 if (l.IsRepository != r.IsRepository)
-                    return l.IsRepository ? 1 : -1;
+                    return l.IsRepository ? -1 : 1;
 
                 return string.Compare(l.Name, r.Name, StringComparison.Ordinal);
             });

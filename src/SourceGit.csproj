@@ -58,4 +58,14 @@
   <ItemGroup Condition="$([MSBuild]::IsOSPlatform('OSX'))">
     <LinkerArg Include="-mmacosx-version-min=11.0" Condition="'$(Configuration)' == 'Release'" />
   </ItemGroup>
+
+  <ItemGroup>
+    <UpToDateCheckInput Remove="Views\RepositoryGroup.axaml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Views\WorkingCopy - 复制.axaml.cs">
+      <DependentUpon>%(Filename)</DependentUpon>
+    </Compile>
+  </ItemGroup>
 </Project>

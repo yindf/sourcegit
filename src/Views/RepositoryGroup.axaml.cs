@@ -1,61 +1,19 @@
 using System;
 using System.IO;
-
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Markup.Xaml;
 using Avalonia.VisualTree;
 
 namespace SourceGit.Views
 {
-    public class RepositoryTreeNodeToggleButton : ToggleButton
+
+    public partial class RepositoryGroup : UserControl
     {
-        protected override Type StyleKeyOverride => typeof(ToggleButton);
-
-        protected override void OnPointerPressed(PointerPressedEventArgs e)
-        {
-            if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed &&
-                DataContext is ViewModels.RepositoryNode { IsRepository: false } node)
-            {
-                if(node.Context is ViewModels.Welcome welcome)
-                    welcome.ToggleNodeIsExpanded(node);
-                else if(node.Context is ViewModels.RepositoryGroup group)
-                    group.ToggleNodeIsExpanded(node);
-            }
-
-            e.Handled = true;
-        }
-    }
-
-    public class RepositoryListBox : ListBox
-    {
-        protected override Type StyleKeyOverride => typeof(ListBox);
-
-        protected override void OnKeyDown(KeyEventArgs e)
-        {
-            if (SelectedItem is ViewModels.RepositoryNode { IsRepository: false } node && e.KeyModifiers == KeyModifiers.None)
-            {
-                if ((node.IsExpanded && e.Key == Key.Left) || (!node.IsExpanded && e.Key == Key.Right))
-                {
-                    if (node.Context is ViewModels.Welcome welcome)
-                        welcome.ToggleNodeIsExpanded(node);
-                    else if (node.Context is ViewModels.RepositoryGroup group)
-                        group.ToggleNodeIsExpanded(node);
-
-                    e.Handled = true;
-                }
-            }
-
-            if (!e.Handled)
-                base.OnKeyDown(e);
-        }
-    }
-
-    public partial class Welcome : UserControl
-    {
-        public Welcome()
+        public RepositoryGroup()
         {
             InitializeComponent();
         }
@@ -74,29 +32,9 @@ namespace SourceGit.Views
                 }
                 else if (e.Key == Key.Escape)
                 {
-                    ViewModels.Welcome.Instance.ClearSearchFilter();
+                    (DataContext as ViewModels.RepositoryGroup).ClearSearchFilter();
                     e.Handled = true;
                 }
-            }
-        }
-
-        private void SetupTreeViewDragAndDrop(object sender, RoutedEventArgs _)
-        {
-            if (sender is ListBox view)
-            {
-                DragDrop.SetAllowDrop(view, true);
-                view.AddHandler(DragDrop.DragOverEvent, DragOverTreeView);
-                view.AddHandler(DragDrop.DropEvent, DropOnTreeView);
-            }
-        }
-
-        private void SetupTreeNodeDragAndDrop(object sender, RoutedEventArgs _)
-        {
-            if (sender is Grid grid)
-            {
-                DragDrop.SetAllowDrop(grid, true);
-                grid.AddHandler(DragDrop.DragOverEvent, DragOverTreeNode);
-                grid.AddHandler(DragDrop.DropEvent, DropOnTreeNode);
             }
         }
 
@@ -112,7 +50,7 @@ namespace SourceGit.Views
                 }
                 else
                 {
-                    ViewModels.Welcome.Instance.ToggleNodeIsExpanded(node);
+                    (DataContext as ViewModels.RepositoryGroup).ToggleNodeIsExpanded(node);
                 }
 
                 e.Handled = true;
@@ -123,8 +61,8 @@ namespace SourceGit.Views
         {
             if (sender is Grid { DataContext: ViewModels.RepositoryNode node } grid)
             {
-                var menu = ViewModels.Welcome.Instance.CreateContextMenu(node);
-                menu?.Open(grid);
+                var menu = (DataContext as ViewModels.RepositoryGroup).CreateContextMenu(node);
+                grid.OpenContextMenu(menu);
                 e.Handled = true;
             }
         }
@@ -144,10 +82,15 @@ namespace SourceGit.Views
             }
         }
 
-        private void OnPointerReleasedOnTreeNode(object _1, PointerReleasedEventArgs _2)
+        private void OnPointerReleasedOnTreeNode(object sender, PointerReleasedEventArgs _2)
         {
             _pressedTreeNode = false;
             _startDragTreeNode = false;
+
+            if (sender is Grid { DataContext: ViewModels.RepositoryNode node } grid)
+            {
+                (DataContext as ViewModels.RepositoryGroup).OpenRepo(node);
+            }
         }
 
         private void OnPointerMovedOverTreeNode(object sender, PointerEventArgs e)
@@ -193,7 +136,7 @@ namespace SourceGit.Views
             if (e.Data.Contains("MovedRepositoryTreeNode") && e.Data.Get("MovedRepositoryTreeNode") is ViewModels.RepositoryNode moved)
             {
                 e.Handled = true;
-                ViewModels.Welcome.Instance.MoveNode(moved, null);
+                (DataContext as ViewModels.RepositoryGroup).MoveNode(moved, null);
             }
             else if (e.Data.Contains(DataFormats.Files))
             {
@@ -257,7 +200,7 @@ namespace SourceGit.Views
                 e.Handled = true;
 
                 if (to != moved)
-                    ViewModels.Welcome.Instance.MoveNode(moved, to);
+                    (DataContext as ViewModels.RepositoryGroup).MoveNode(moved, to);
             }
             else if (e.Data.Contains(DataFormats.Files))
             {
@@ -286,11 +229,11 @@ namespace SourceGit.Views
                 {
                     var parent = this.FindAncestorOfType<Launcher>();
                     if (parent is { DataContext: ViewModels.Launcher launcher })
-                        launcher.OpenRepositoryInTab(node, null);
+                        launcher.OpenRepositoryInTab(node, new ViewModels.LauncherPage());
                 }
                 else
                 {
-                    ViewModels.Welcome.Instance.ToggleNodeIsExpanded(node);
+                    (DataContext as ViewModels.RepositoryGroup).ToggleNodeIsExpanded(node);
                 }
 
                 e.Handled = true;
@@ -310,16 +253,39 @@ namespace SourceGit.Views
             var test = new Commands.QueryRepositoryRootPath(path).ReadToEnd();
             if (!test.IsSuccess || string.IsNullOrEmpty(test.StdOut))
             {
-                ViewModels.Welcome.Instance.InitRepository(path, parent, test.StdErr);
+                (DataContext as ViewModels.RepositoryGroup).InitRepository(path, parent, test.StdErr);
                 return;
             }
 
             var normalizedPath = test.StdOut.Trim().Replace("\\", "/");
             var node = ViewModels.Preference.Instance.FindOrAddNodeByRepositoryPath(normalizedPath, parent, true);
-            ViewModels.Welcome.Instance.Refresh();
+            (DataContext as ViewModels.RepositoryGroup).Refresh();
 
             var launcher = this.FindAncestorOfType<Launcher>()?.DataContext as ViewModels.Launcher;
             launcher?.OpenRepositoryInTab(node, launcher.ActivePage);
+        }
+
+        private void Fetch(object _, RoutedEventArgs e)
+        {
+            (DataContext as ViewModels.RepositoryGroup)?.Fetch();
+            e.Handled = true;
+        }
+
+        private void Pull(object _, RoutedEventArgs e)
+        {
+            (DataContext as ViewModels.RepositoryGroup)?.Pull();
+            e.Handled = true;
+        }
+
+        private void Push(object _, RoutedEventArgs e)
+        {
+            (DataContext as ViewModels.RepositoryGroup)?.Push();
+            e.Handled = true;
+        }
+        private void Changes(object _, RoutedEventArgs e)
+        {
+            (DataContext as ViewModels.RepositoryGroup)?.Changes();
+            e.Handled = true;
         }
 
         private bool _pressedTreeNode = false;

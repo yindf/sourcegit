@@ -25,6 +25,11 @@ namespace SourceGit.ViewModels
             }
         }
 
+        public Repository Repo
+        {
+            get => _repo;
+        }
+
         public List<Models.Branch> RemoteBranches
         {
             get => _remoteBranches;
