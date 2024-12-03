@@ -25,10 +25,6 @@
             Data="{StaticResource Icons.Info}"
             IsVisible="{OnPlatform True, macOS=False}"/>
 
-      <v:CaptionButtons HorizontalAlignment="Right"
-                        IsCloseButtonOnly="True"
-                        IsVisible="{OnPlatform True, macOS=False}"/>
-
       <TextBlock Grid.Column="0" Grid.ColumnSpan="3"
                  Classes="bold"
                  Text="Confirm Checkout"
