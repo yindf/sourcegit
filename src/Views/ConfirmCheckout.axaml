@@ -1,0 +1,67 @@
+<v:ChromelessWindow xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                    xmlns:v="using:SourceGit.Views"
+                    mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+                    x:Class="SourceGit.Views.ConfirmCheckout"
+                    x:Name="ThisControl"
+                    Title="Restart Required"
+                    Icon="/App.ico"
+                    CanResize="False"
+                    SizeToContent="WidthAndHeight"
+                    WindowStartupLocation="CenterOwner">
+  <Grid RowDefinitions="Auto,*">
+    <!-- TitleBar -->
+    <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Height="30" IsVisible="{Binding !#ThisControl.UseSystemWindowFrame}">
+      <Border Grid.Column="0" Grid.ColumnSpan="3"
+              Background="{DynamicResource Brush.TitleBar}"
+              BorderThickness="0,0,0,1" BorderBrush="{DynamicResource Brush.Border0}" 
+              PointerPressed="BeginMoveWindow"/>
+
+      <Path Grid.Column="0"
+            Width="14" Height="14"
+            Margin="10,0,0,0"
+            Data="{StaticResource Icons.Info}"
+            IsVisible="{OnPlatform True, macOS=False}"/>
+
+      <v:CaptionButtonsMacOS Grid.Column="0"
+                             Margin="0,2,0,0"
+                             IsCloseButtonOnly="True"
+                             IsVisible="{OnPlatform False, macOS=True}"/>
+
+      <TextBlock Grid.Column="0" Grid.ColumnSpan="3"
+                 Classes="bold"
+                 Text="Confirm Checkout"
+                 HorizontalAlignment="Center" VerticalAlignment="Center"
+                 IsHitTestVisible="False"/>
+
+      <v:CaptionButtons Grid.Column="2"
+                        IsCloseButtonOnly="True"
+                        IsVisible="{OnPlatform True, macOS=False}"/>
+    </Grid>
+
+    <StackPanel Grid.Row="1" Margin="0,16" Orientation="Vertical">
+      
+      <TextBlock Text="确认签出选中分支？" HorizontalAlignment="Center"/>
+
+      <StackPanel Orientation="Horizontal" Margin="50, 0, 50, 0">
+        <Button Classes="flat primary"
+                Width="80"
+                Margin="0,16,0,0"
+                Content="{DynamicResource Text.Sure}"
+                Click="Confirm"
+                HorizontalAlignment="Center"
+                HotKey="Enter"/>
+
+        <Button Classes="flat primary"
+                Width="80"
+                Margin="20,16,0,0"
+                Content="{DynamicResource Text.Cancel}"
+                Click="Cancel"
+                HorizontalAlignment="Center"
+                HotKey="Escape"/>
+      </StackPanel>
+    </StackPanel>
+  </Grid>
+</v:ChromelessWindow>

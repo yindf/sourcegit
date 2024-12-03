@@ -56,7 +56,7 @@
 
             <Path Width="14" Height="14" Data="{StaticResource Icons.Push}"/>
           </Button>
-          
+
           <Button Classes="icon_button" Width="100" Margin="16,0,0,0" Click="Changes">
             <StackPanel Orientation="Horizontal">
               <Path Width="12" Height="12" Data="{StaticResource Icons.Changes}"/>
@@ -165,7 +165,7 @@
                                                   Focusable="False"
                                                   HorizontalAlignment="Center"
                                                   IsChecked="{Binding IsExpanded, Mode=OneWay}"
-                                                  IsVisible="{Binding !IsRepository}"/>
+                                                  IsVisible="{Binding HasChildren}"/>
 
                 <Path Grid.Column="1"
                       Width="14" Height="14"
@@ -181,7 +181,7 @@
                               HorizontalAlignment="Left"
                               Foreground="{DynamicResource Brush.FG1}"
                               IsChecked="{Binding IsExpanded}"
-                              IsVisible="{Binding !IsRepository}"/>
+                              IsVisible="{Binding HasChildren}"/>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal">
                   <v:LoadingIcon Grid.Column="3" Width="14" Height="14" Margin="8,0,0,0" IsVisible="{Binding Repo.IsBusy, FallbackValue=false}"/>
@@ -218,22 +218,63 @@
                     BorderBrush="{DynamicResource Brush.Border0}"/>
       
       <!-- Body -->
-      <Border Grid.Column="2">
-        <ContentControl Content="{Binding Data}">
-          <ContentControl.DataTemplates>
+      <Grid Grid.Column="2" RowDefinitions="Auto,*">
+        <!-- Confict, Merge status bar -->
+        <Grid Grid.Row="0" Height="28" ColumnDefinitions="*,Auto,Auto,Auto" Background="{DynamicResource Brush.Conflict}" IsVisible="{Binding InProgressContext, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <ContentControl Grid.Column="0" Margin="8,0" Content="{Binding InProgressContext}">
+            <ContentControl.DataTemplates>
+              <DataTemplate DataType="vm:CherryPickInProgress">
+                <TextBlock FontWeight="Bold" Foreground="{DynamicResource Brush.ConflictForeground}" Text="{DynamicResource Text.InProgress.CherryPick}"/>
+              </DataTemplate>
 
-            <DataTemplate DataType="vm:Repository">
-              <v:Repository/>
-            </DataTemplate>
+              <DataTemplate DataType="vm:RebaseInProgress">
+                <TextBlock FontWeight="Bold" Foreground="{DynamicResource Brush.ConflictForeground}" Text="{DynamicResource Text.InProgress.Rebase}"/>
+              </DataTemplate>
 
-            <DataTemplate DataType="vm:WorkingCopyGroup">
-              <v:WorkingCopyGroup/>
-            </DataTemplate>
+              <DataTemplate DataType="vm:RevertInProgress">
+                <TextBlock FontWeight="Bold" Foreground="{DynamicResource Brush.ConflictForeground}" Text="{DynamicResource Text.InProgress.Revert}"/>
+              </DataTemplate>
 
-          </ContentControl.DataTemplates>
-        </ContentControl>
-      </Border>
+              <DataTemplate DataType="vm:MergeInProgress">
+                <TextBlock FontWeight="Bold" Foreground="{DynamicResource Brush.ConflictForeground}" Text="{DynamicResource Text.InProgress.Merge}"/>
+              </DataTemplate>
+            </ContentControl.DataTemplates>
+          </ContentControl>
 
+          <Button Grid.Column="2"
+                  Classes="flat primary"
+                  FontWeight="Regular"
+                  BorderThickness="0"
+                  Content="{DynamicResource Text.Repository.Continue}"
+                  Padding="8,0" Margin="4,0"
+                  Command="{Binding ContinueMerge}"
+                  IsVisible="{Binding !HasUnsolvedConflicts}"/>
+          <Button Grid.Column="3"
+                  Classes="flat"
+                  FontWeight="Regular"
+                  BorderThickness="0"
+                  Content="{DynamicResource Text.Repository.Abort}"
+                  Padding="8,0" Margin="4,0"
+                  Command="{Binding AbortMerge}"/>
+        </Grid>
+
+        <!-- working copy -->
+        <Border Grid.Row="1">
+          <ContentControl Content="{Binding Data}">
+            <ContentControl.DataTemplates>
+
+              <DataTemplate DataType="vm:Repository">
+                <v:Repository/>
+              </DataTemplate>
+
+              <DataTemplate DataType="vm:WorkingCopyGroup">
+                <v:WorkingCopyGroup/>
+              </DataTemplate>
+
+            </ContentControl.DataTemplates>
+          </ContentControl>
+        </Border>
+      </Grid>
     </Grid>
     </Border>
     

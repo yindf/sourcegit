@@ -21,10 +21,6 @@
                 int loc2 = 0;
 
                 bool isDigit1 = char.IsDigit(c1);
-                bool isDigit2 = char.IsDigit(c2);
-                if (isDigit1 != isDigit2)
-                    return c1.CompareTo(c2);
-
                 do
                 {
                     tmp1[loc1] = c1;
@@ -37,6 +33,7 @@
                         break;
                 } while (char.IsDigit(c1) == isDigit1);
 
+                bool isDigit2 = char.IsDigit(c2);
                 do
                 {
                     tmp2[loc2] = c2;
@@ -51,14 +48,20 @@
 
                 string sub1 = new string(tmp1, 0, loc1);
                 string sub2 = new string(tmp2, 0, loc2);
-                int result;
-                if (isDigit1)
-                    result = loc1 == loc2 ? string.CompareOrdinal(sub1, sub2) : loc1 - loc2;
+                long result;
+                if (isDigit1 && isDigit2)
+                {
+                    var num1 = long.Parse(sub1);
+                    var num2 = long.Parse(sub2);
+                    result = num1 - num2;
+                }
                 else
-                    result = string.CompareOrdinal(sub1, sub2);
+                {
+                    result = string.Compare(sub1, sub2, System.StringComparison.Ordinal);
+                }
 
                 if (result != 0)
-                    return result;
+                    return (int)result;
             }
 
             return len1 - len2;

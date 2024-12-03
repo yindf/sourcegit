@@ -155,6 +155,11 @@ namespace SourceGit.ViewModels
             set => SetProperty(ref _commitMessage, value);
         }
 
+        public RepositoryGroup Group
+        {
+            get => _group;
+        }
+
         public WorkingCopyGroup(RepositoryGroup group, List<Repository> repos)
         {
             _repos = repos;
@@ -408,6 +413,11 @@ namespace SourceGit.ViewModels
         public void Commit()
         {
             DoCommit(AutoStageBeforeCommit, false);
+        }
+
+        public void Refresh()
+        {
+            _group.MarkWorkingCopyDirtyManually();
         }
 
         public void CommitWithAutoStage()
@@ -1138,6 +1148,14 @@ namespace SourceGit.ViewModels
                 DetailContext = new DiffContext(change.Repo.FullPath, new Models.DiffOption(change, isUnstaged), _detailContext as DiffContext);
         }
 
+        public void OpenTerminal()
+        {
+            if (!ViewModels.Preference.Instance.IsGitConfigured())
+                App.RaiseException(PopupHost.Active.GetId(), App.Text("NotConfigured"));
+            else
+                Native.OS.OpenTerminal(null);
+        }
+
         private async void UseTheirs(List<Models.Change> changes)
         {
             var files = new List<string>();
@@ -1197,6 +1215,8 @@ namespace SourceGit.ViewModels
             await Task.Run(() => Commands.MergeTool.OpenForMerge(change.Repo.FullPath, toolType, toolPath, change.Path));
             change.Repo.SetWatcherEnabled(true);
         }
+
+
 
         private void DoCommit(bool autoStage, bool autoPush)
         {

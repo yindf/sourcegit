@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Collections;
 using Avalonia.Controls;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using SourceGit.Models;
 using SourceGit.Views;
@@ -34,33 +36,48 @@ namespace SourceGit.ViewModels
         public object Data
         {
             get => _repo;
-            set => SetProperty(ref _repo, value);
+            set
+            { 
+                SetProperty(ref _repo, value);
+                OnPropertyChanged(nameof(InProgressContext));
+            }
         }
 
         public List<Repository> Repositories { get; set; } = new List<Repository>();
 
-        public RepositoryNode Group { get; private set; }
+        public RepositoryNode Node { get; private set; }
 
-        public RepositoryGroup(RepositoryNode group)
+        public RepositoryGroup(RepositoryNode node)
         {
-            Group = group;
+            Node = node;
             Refresh();
         }
 
+        public InProgressContext InProgressContext
+        {
+            get => Data is WorkingCopyGroup ? _inProgressContext : null;
+            private set => SetProperty(ref _inProgressContext, value);
+        }
+
+        public bool HasUnsolvedConflicts
+        {
+            get => _hasUnsolvedConflicts;
+            private set => SetProperty(ref _hasUnsolvedConflicts, value);
+        }
 
         public void Refresh()
         {
             if (string.IsNullOrWhiteSpace(_searchFilter))
             {
-                    ResetVisibility(Group);
+                ResetVisibility(Node);
             }
             else
             {
-                    SetVisibilityBySearch(Group);
+                SetVisibilityBySearch(Node);
             }
 
             var rows = new List<RepositoryNode>();
-            MakeTreeRows(rows, new List<RepositoryNode>() { Group });
+            MakeTreeRows(rows, new List<RepositoryNode>() { Node });
             Rows.Clear();
             Rows.AddRange(rows);
 
@@ -149,7 +166,7 @@ namespace SourceGit.ViewModels
         public void AddRootNode()
         {
             if (PopupHost.CanCreatePopup())
-                PopupHost.ShowPopup(new CreateGroup(Group));
+                PopupHost.ShowPopup(new CreateGroup(Node));
         }
         public void MoveNode(RepositoryNode from, RepositoryNode to)
         {
@@ -294,7 +311,7 @@ namespace SourceGit.ViewModels
                 node.Context = this;
                 rows.Add(node);
 
-                if (node.IsRepository || !node.IsExpanded)
+                if (!node.HasChildren)
                     continue;
 
                 MakeTreeRows(rows, node.SubNodes, depth + 1);
@@ -339,64 +356,43 @@ namespace SourceGit.ViewModels
                 Data = repo;
                 Repositories.Add(repo);
 
-                if (App.GetLauncer() != null && !App.GetLauncer().ActiveWorkspace.Groups.Contains(Group.Id))
+                if (App.GetLauncer() != null && !App.GetLauncer().ActiveWorkspace.Groups.Contains(Node.Id))
                 {
-                    App.GetLauncer().ActiveWorkspace.Groups.Add(Group.Id);
+                    App.GetLauncer().ActiveWorkspace.Groups.Add(Node.Id);
                 }
             }
         }
 
-        internal async void Fetch()
+        internal void Fetch()
         {
             foreach (var repo in Repositories)
             {
                 var fetch = new Fetch(repo);
-                PopupHost.ShowPopup(fetch);
-                repo.SetBusy(true);
-                fetch.InProgress = true;
-                await fetch.Sure();
-                fetch.InProgress = false;
-                repo.SetBusy(false);
+                PopupHost.ShowAndStartPopup(fetch);
             }
-
-            PopupHost.Active.Popup = null;
         }
 
-        internal async void Pull()
+        internal void Pull()
         {
             foreach (var repo in Repositories)
             {
                 var pull = new Pull(repo, null);
                 pull.PreAction = Models.DealWithLocalChanges.StashAndReaply;
                 pull.UseRebase = false;
-                PopupHost.ShowPopup(pull);
-                repo.SetBusy(true);
-                pull.InProgress = true;
-                await pull.Sure();
-                pull.InProgress = false;
-                repo.SetBusy(false);
+                PopupHost.ShowAndStartPopup(pull);
             }
-
-            PopupHost.Active.Popup = null;
         }
 
-        internal async void Push()
+        internal void Push()
         {
             foreach (var repo in Repositories)
             {
-                if (repo.CurrentBranch.TrackStatus.Ahead.Count > 0)
+                if (repo?.CurrentBranch?.TrackStatus?.Ahead?.Count > 0)
                 {
                     var push = new Push(repo, null);
-                    PopupHost.ShowPopup(push);
-                    repo.SetBusy(true);
-                    push.InProgress = true;
-                    await push.Sure();
-                    push.InProgress = false;
-                    repo.SetBusy(false);
+                    PopupHost.ShowAndStartPopup(push);
                 }
             }
-
-            PopupHost.Active.Popup = null;
         }
 
         public static string LongestCommonPrefix(string str1, string str2)
@@ -429,15 +425,61 @@ namespace SourceGit.ViewModels
 
         public void MarkWorkingCopyDirtyManually()
         {
-            var changes = new List<Change>();
+            var changes = new Dictionary<string, Change>();
 
             foreach (Repository repo in Repositories)
             {
-                changes.AddRange(repo.WorkingCopy.Staged.Where(c => { c.Repo = repo; return true; }));
-                changes.AddRange(repo.WorkingCopy.Unstaged.Where(c => { c.Repo = repo; return true; }));
+                foreach (var c in repo.WorkingCopy.Staged)
+                {
+                    c.Repo = repo;
+                    c.GroupPath = $"{repo.FullPath.Substring(PathPrefix.Length)}/{c.Path}".Trim('/');
+                    changes.TryAdd(c.GroupPath, c);
+                }
+
+                foreach (var c in repo.WorkingCopy.Unstaged)
+                {
+                    c.Repo = repo;
+                    c.GroupPath = $"{repo.FullPath.Substring(PathPrefix.Length)}/{c.Path}".Trim('/');
+                    changes.TryAdd(c.GroupPath, c);
+                }
             }
 
-            _workCopyGroup.SetData(changes);
+            var hasUnsolvedConflict = _workCopyGroup.SetData(changes.Values.ToList());
+            var inProgress = null as InProgressContext;
+
+            foreach (Repository repo in Repositories)
+            {
+                if (File.Exists(Path.Combine(repo.GitDir, "CHERRY_PICK_HEAD")))
+                    inProgress = new CherryPickInProgress(repo.FullPath);
+                else if (File.Exists(Path.Combine(repo.GitDir, "REBASE_HEAD")) && Directory.Exists(Path.Combine(repo.GitDir, "rebase-merge")))
+                    inProgress = new RebaseInProgress(repo);
+                else if (File.Exists(Path.Combine(repo.GitDir, "REVERT_HEAD")))
+                    inProgress = new RevertInProgress(repo.FullPath);
+                else if (File.Exists(Path.Combine(repo.GitDir, "MERGE_HEAD")))
+                    inProgress = new MergeInProgress(repo.FullPath);
+            }
+
+            Dispatcher.UIThread.Invoke(() =>
+            {
+                InProgressContext = inProgress;
+                HasUnsolvedConflicts = hasUnsolvedConflict;
+            });
+        }
+
+        public async void AbortMerge()
+        {
+            foreach (Repository repo in Repositories)
+            {
+                await repo.AbortMerge();
+            }
+        }
+
+        public async void ContinueMerge()
+        {
+            foreach (Repository repo in Repositories)
+            {
+                await repo.ContinueMerge();
+            }
         }
 
         private static Welcome _instance = new Welcome();
@@ -445,5 +487,7 @@ namespace SourceGit.ViewModels
         private object _repo = null;
         private WorkingCopyGroup _workCopyGroup = null;
         private string _pathPrefix;
+        private InProgressContext _inProgressContext = null;
+        private bool _hasUnsolvedConflicts = false;
     }
 }

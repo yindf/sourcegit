@@ -35,7 +35,9 @@ namespace SourceGit.Views
             {
                 var selected = await topLevel.StorageProvider.OpenFolderPickerAsync(options);
                 if (selected.Count == 1)
-                    OpenOrInitRepository(selected[0].Path.LocalPath);
+                {
+                    ViewModels.PopupHost.ShowAndStartPopup(new ViewModels.ScanRepositories(selected[0].Path.LocalPath));
+                }
             }
             catch (Exception exception)
             {

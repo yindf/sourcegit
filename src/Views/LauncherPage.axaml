@@ -24,7 +24,15 @@
 
           <DataTemplate DataType="vm:RepositoryGroup">
             <ContentControl Content="{Binding Data}">
-                <v:RepositoryToolbar/>
+              <ContentControl.DataTemplates>
+                <DataTemplate DataType="vm:Repository">
+                  <v:RepositoryToolbar/>
+                </DataTemplate>
+
+                <DataTemplate DataType="vm:WorkingCopyGroup">
+                  <v:WorkingCopyGroupToolbar/>
+                </DataTemplate>
+              </ContentControl.DataTemplates>
             </ContentControl>
           </DataTemplate>
           

@@ -17,7 +17,7 @@ namespace SourceGit.Views
         protected override void OnPointerPressed(PointerPressedEventArgs e)
         {
             if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed &&
-                DataContext is ViewModels.RepositoryNode { IsRepository: false } node)
+                DataContext is ViewModels.RepositoryNode { HasChildren: true } node)
             {
                 if(node.Context is ViewModels.Welcome welcome)
                     welcome.ToggleNodeIsExpanded(node);
