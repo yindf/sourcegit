@@ -14,7 +14,6 @@ using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 
 using CommunityToolkit.Mvvm.ComponentModel;
-using SourceGit.Models;
 
 namespace SourceGit.ViewModels
 {
@@ -199,7 +198,7 @@ namespace SourceGit.ViewModels
         public int LocalChangesCount
         {
             get => _localChangesCount;
-            private set { SetProperty(ref _localChangesCount, value); }
+            private set => SetProperty(ref _localChangesCount, value);
         }
 
         public int StashesCount
@@ -658,6 +657,7 @@ namespace SourceGit.ViewModels
 
         public void SetWatcherEnabled(bool enabled)
         {
+            SetBusy(!enabled);
             _watcher?.SetEnabled(enabled);
         }
 
