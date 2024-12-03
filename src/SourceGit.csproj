@@ -64,6 +64,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Update="Views\ConfirmCheckout.axaml.cs">
+      <DependentUpon>ConfirmCheckout.axaml</DependentUpon>
+    </Compile>
+    <Compile Update="Views\WorkingCopyGroupToolbar.axaml.cs">
+      <DependentUpon>WorkingCopyGroupToolbar.axaml</DependentUpon>
+    </Compile>
     <Compile Update="Views\WorkingCopy - 复制.axaml.cs">
       <DependentUpon>%(Filename)</DependentUpon>
     </Compile>

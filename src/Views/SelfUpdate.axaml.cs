@@ -17,7 +17,7 @@ namespace SourceGit.Views
 
         private void GotoDownload(object _, RoutedEventArgs e)
         {
-            Native.OS.OpenBrowser("https://github.com/sourcegit-scm/sourcegit/releases/latest");
+            Native.OS.OpenBrowser("http://192.168.16.51:9999/sourcegit");
             e.Handled = true;
         }
 

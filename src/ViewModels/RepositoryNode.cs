@@ -54,6 +54,11 @@ namespace SourceGit.ViewModels
             set => SetProperty(ref _isRepository, value);
         }
 
+        public bool HasChildren
+        {
+            get => SubNodes.Count > 0;
+        }
+
         public bool IsExpanded
         {
             get => _isExpanded;

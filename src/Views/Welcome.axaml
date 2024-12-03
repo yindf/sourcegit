@@ -113,7 +113,7 @@
                                                   Focusable="False"
                                                   HorizontalAlignment="Center"
                                                   IsChecked="{Binding IsExpanded, Mode=OneWay}"
-                                                  IsVisible="{Binding !IsRepository}"/>
+                                                  IsVisible="{Binding HasChildren}"/>
                 
                 <Path Grid.Column="1"
                       Width="14" Height="14"
@@ -129,7 +129,7 @@
                               HorizontalAlignment="Left"
                               Foreground="{DynamicResource Brush.FG1}"
                               IsChecked="{Binding IsExpanded}"
-                              IsVisible="{Binding !IsRepository}"/>
+                              IsVisible="{Binding HasChildren}"/>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal">
                   <TextBlock Classes="primary" VerticalAlignment="Center" Text="{Binding Name}"/>

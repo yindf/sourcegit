@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace SourceGit.ViewModels
@@ -10,6 +11,8 @@ namespace SourceGit.ViewModels
             get;
             set;
         } = null;
+
+        private Queue<Popup> _queue = new Queue<Popup>();
 
         public Popup Popup
         {
@@ -32,6 +35,13 @@ namespace SourceGit.ViewModels
         {
             var dumpPage = Active;
             popup.HostPageId = dumpPage.GetId();
+
+            if (dumpPage.Popup != null)
+            {
+                dumpPage._queue.Enqueue(popup);
+                return;
+            }
+
             dumpPage.Popup = popup;
             dumpPage.ProcessPopup();
         }
@@ -61,13 +71,29 @@ namespace SourceGit.ViewModels
                     _popup.InProgress = false;
                     if (finished)
                     {
-                        Popup = null;
+                        if (_queue.TryDequeue(out var popup))
+                        {
+                            Popup = popup;
+                            ProcessPopup();
+                        }
+                        else
+                        {
+                            Popup = null;
+                        }
                     }
                 }
                 else
                 {
                     _popup.InProgress = false;
-                    Popup = null;
+                    if (_queue.TryDequeue(out var popup))
+                    {
+                        Popup = popup;
+                        ProcessPopup();
+                    }
+                    else
+                    {
+                        Popup = null;
+                    }
                 }
             }
         }

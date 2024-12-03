@@ -272,6 +272,11 @@
                 ToolTip.Placement="Top"
                 ToolTip.VerticalOffset="0"
                 IsVisible="{Binding IsCommitWithPushVisible}"/>
+
+        <Button Grid.Column="10"
+                Command="{Binding Refresh}"
+                Content=""
+                HotKey="F5" />
       </Grid>
     </Grid>
   </Grid>
