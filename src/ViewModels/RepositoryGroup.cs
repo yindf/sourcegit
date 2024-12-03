@@ -2,15 +2,11 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using Avalonia.Collections;
 using Avalonia.Controls;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using SourceGit.Models;
-using SourceGit.Views;
 
 namespace SourceGit.ViewModels
 {
@@ -466,20 +462,20 @@ namespace SourceGit.ViewModels
             });
         }
 
-        public async void AbortMerge()
+        public void AbortMerge()
         {
             foreach (Repository repo in Repositories)
             {
-                await repo.AbortMerge();
+                repo.AbortMerge();
             }
         }
 
-        public async void ContinueMerge()
+        public void ContinueMerge()
         {
-            foreach (Repository repo in Repositories)
-            {
-                await repo.ContinueMerge();
-            }
+            //foreach (Repository repo in Repositories)
+            //{
+            //    await repo.mer();
+            //}
         }
 
         private static Welcome _instance = new Welcome();

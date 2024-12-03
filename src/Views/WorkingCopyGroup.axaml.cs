@@ -24,27 +24,27 @@ namespace SourceGit.Views
             {
                 var menu = vm.CreateContextMenuForCommitMessages();
                 menu.Placement = PlacementMode.TopEdgeAlignedLeft;
-                button.OpenContextMenu(menu);
+                menu?.Open(button);
                 e.Handled = true;
             }
         }
 
         private void OnUnstagedContextRequested(object sender, ContextRequestedEventArgs e)
         {
-            if (DataContext is ViewModels.WorkingCopyGroup vm)
+            if (DataContext is ViewModels.WorkingCopyGroup vm && sender is Control control)
             {
                 var menu = vm.CreateContextMenuForUnstagedChanges();
-                (sender as Control)?.OpenContextMenu(menu);
+                menu?.Open(control);
                 e.Handled = true;
             }
         }
 
         private void OnStagedContextRequested(object sender, ContextRequestedEventArgs e)
         {
-            if (DataContext is ViewModels.WorkingCopyGroup vm)
+            if (DataContext is ViewModels.WorkingCopyGroup vm && sender is Control control)
             {
                 var menu = vm.CreateContextMenuForStagedChanges();
-                (sender as Control)?.OpenContextMenu(menu);
+                menu?.Open(control);
                 e.Handled = true;
             }
         }

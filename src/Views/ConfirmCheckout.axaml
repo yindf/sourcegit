@@ -25,10 +25,9 @@
             Data="{StaticResource Icons.Info}"
             IsVisible="{OnPlatform True, macOS=False}"/>
 
-      <v:CaptionButtonsMacOS Grid.Column="0"
-                             Margin="0,2,0,0"
-                             IsCloseButtonOnly="True"
-                             IsVisible="{OnPlatform False, macOS=True}"/>
+      <v:CaptionButtons HorizontalAlignment="Right"
+                        IsCloseButtonOnly="True"
+                        IsVisible="{OnPlatform True, macOS=False}"/>
 
       <TextBlock Grid.Column="0" Grid.ColumnSpan="3"
                  Classes="bold"

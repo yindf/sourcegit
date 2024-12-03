@@ -1,11 +1,8 @@
-using System;
 using System.IO;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
-using Avalonia.Markup.Xaml;
 using Avalonia.VisualTree;
 
 namespace SourceGit.Views
@@ -62,7 +59,7 @@ namespace SourceGit.Views
             if (sender is Grid { DataContext: ViewModels.RepositoryNode node } grid)
             {
                 var menu = (DataContext as ViewModels.RepositoryGroup).CreateContextMenu(node);
-                grid.OpenContextMenu(menu);
+                menu.Open(menu);
                 e.Handled = true;
             }
         }
