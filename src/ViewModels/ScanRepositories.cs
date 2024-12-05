@@ -42,7 +42,7 @@ namespace SourceGit.ViewModels
 
                 Dispatcher.UIThread.Invoke(() =>
                 {
-                    var normalizedRoot = rootDir.FullName.Replace("\\", "/");
+                    var normalizedRoot = rootDir.FullName.Replace("\\", "/").TrimEnd('/');
 
                     if (founded.Any(f => normalizedRoot == new DirectoryInfo(f).FullName.Replace("\\", "/")))
                     {
@@ -55,7 +55,7 @@ namespace SourceGit.ViewModels
 
                     foreach (var f in founded)
                     {
-                        var parent = new DirectoryInfo(f).Parent!.FullName.Replace("\\", "/");
+                        var parent = new DirectoryInfo(f).Parent!.FullName.Replace("\\", "/").TrimEnd('/');
                         if (parent.Equals(normalizedRoot, StringComparison.Ordinal))
                         {
                             Preference.Instance.FindOrAddNodeByRepositoryPath(f, null, false);
