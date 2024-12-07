@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -10,47 +11,83 @@ namespace SourceGit.Views
 {
     public partial class WorkingCopyGroupToolbar : UserControl
     {
+        bool _canceling = false;
+        bool _switchDataContext = false;
+
         public WorkingCopyGroupToolbar()
         {
             InitializeComponent();
+            currentBranch.SelectionChanged += CurrentBranch_SelectionChanged;
+        }
+
+        protected override void OnDataContextChanged(EventArgs e)
+        {
+            base.OnDataContextChanged(e);
+
+            if (DataContext == null)
+            {
+                return;
+            }
+
+            var repos = (DataContext as ViewModels.WorkingCopyGroup).Group.Repositories;
+            var commonBranchNames = repos.SelectMany(repo => repo.Branches).Select(branch => branch.Name).Distinct();
+
+            _switchDataContext = true;
+            currentBranch.ItemsSource = commonBranchNames;
+            currentBranch.SelectedItem = repos.FirstOrDefault().CurrentBranch.Name;
+            _switchDataContext = false;
         }
 
         protected override void OnInitialized()
         {
             base.OnInitialized();
-            // Additional initialization logic if needed
-
-            var repos = (DataContext as ViewModels.WorkingCopyGroup).Group.Repositories;
-            var commonBranchNames = repos.Select(repo => repo.Branches.Select(branch => branch.Name).ToHashSet())
-                .Aggregate((previousSet, nextSet) =>
-                {
-                    previousSet.IntersectWith(nextSet);
-                    return previousSet;
-                }).ToList();
-
-
-            currentBranch.ItemsSource = commonBranchNames;
-            currentBranch.SelectedIndex = commonBranchNames.IndexOf(repos.FirstOrDefault().CurrentBranch.Name);
-
-            currentBranch.SelectionChanged += CurrentBranch_SelectionChanged;
         }
 
-        bool canceling = false;
 
         private void CurrentBranch_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (canceling)
+            if (e.AddedItems.Count == 0 || e.RemovedItems.Count == 0)
             {
                 return;
             }
+
+            if (_switchDataContext)
+            {
+                return;
+            }
+
+            if (_canceling)
+            {
+                _canceling = false;
+                return;
+            }
+
+            //var sameBranch = true;
+            //foreach(var repo in (DataContext as ViewModels.WorkingCopyGroup).Group.Repositories)
+            //{
+            //    if(repo.CurrentBranch.Name != e.AddedItems[0] as string)
+            //    {
+            //        sameBranch = false;
+            //        break;
+            //    }
+            //}
+
+            //if (sameBranch)
+            //{
+            //    return;
+            //}
+
 
             var repos = (DataContext as ViewModels.WorkingCopyGroup).Group.Repositories;
 
             var dialog = new ConfirmCheckout();
             dialog.OnCancel = () => 
             {
-                canceling = true;
-                currentBranch.SelectedValue = e.RemovedItems[0];
+                _canceling = true;
+                if (e.RemovedItems.Count > 0)
+                {
+                    currentBranch.SelectedValue = e.RemovedItems[0];
+                }
             };
 
             dialog.OnConfirm = () => 
