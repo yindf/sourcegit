@@ -68,7 +68,7 @@
                              FontSize="{Binding Source={x:Static vm:Preference.Instance}, Path=DefaultFontSize, Converter={x:Static c:DoubleConverters.Decrease}}"
                              TextAlignment="Center"
                              Text="{Binding Node.Name}"
-                             IsVisible="{Binding Node.IsRepository}"
+                             IsVisible="{Binding Node.Name, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                              IsHitTestVisible="False"/>
                   <TextBlock Grid.Column="1"
                              Classes="primary"
@@ -76,7 +76,7 @@
                              FontSize="{Binding Source={x:Static vm:Preference.Instance}, Path=DefaultFontSize, Converter={x:Static c:DoubleConverters.Decrease}}"
                              TextAlignment="Center"
                              Text="{DynamicResource Text.PageTabBar.Welcome.Title}"
-                             IsVisible="{Binding !Node.IsRepository}"
+                             IsVisible="{Binding Node.Name, Converter={x:Static StringConverters.IsNullOrEmpty}}"
                              IsHitTestVisible="False"/>
                   <Button Grid.Column="2"
                           Classes="icon_button"
