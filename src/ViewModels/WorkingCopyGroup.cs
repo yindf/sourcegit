@@ -349,6 +349,8 @@ namespace SourceGit.ViewModels
             }
 
             IsStaging = false;
+
+            Refresh();
         }
 
         public void UnstageSelected(Models.Change next)
@@ -400,6 +402,8 @@ namespace SourceGit.ViewModels
             }
 
             IsUnstaging = false;
+
+            Refresh();
         }
 
         public void Discard(List<Models.Change> changes)
@@ -408,6 +412,8 @@ namespace SourceGit.ViewModels
             {
                 PopupHost.ShowPopup(new Discard(null, changes));
             }
+
+            Refresh();
         }
 
         public void Commit()

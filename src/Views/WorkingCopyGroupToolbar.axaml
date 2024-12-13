@@ -10,7 +10,7 @@
   <Grid ColumnDefinitions="*">
     <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="20,0,0,0">
       <TextBlock Text="{DynamicResource Text.Reset.Target}" />
-      <ComboBox SelectedIndex="0" MaxDropDownHeight="100" x:Name="currentBranch" />
+      <ComboBox SelectedIndex="0" MaxDropDownHeight="800" x:Name="currentBranch" />
     </StackPanel>
   </Grid>
 </UserControl>

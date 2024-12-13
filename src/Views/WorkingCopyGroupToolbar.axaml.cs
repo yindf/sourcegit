@@ -62,22 +62,6 @@ namespace SourceGit.Views
                 return;
             }
 
-            //var sameBranch = true;
-            //foreach(var repo in (DataContext as ViewModels.WorkingCopyGroup).Group.Repositories)
-            //{
-            //    if(repo.CurrentBranch.Name != e.AddedItems[0] as string)
-            //    {
-            //        sameBranch = false;
-            //        break;
-            //    }
-            //}
-
-            //if (sameBranch)
-            //{
-            //    return;
-            //}
-
-
             var repos = (DataContext as ViewModels.WorkingCopyGroup).Group.Repositories;
 
             var dialog = new ConfirmCheckout();
@@ -92,9 +76,15 @@ namespace SourceGit.Views
 
             dialog.OnConfirm = () => 
             {
+                var targetBranch = currentBranch.SelectedValue as string;
                 foreach (var repo in repos)
                 {
-                    var checkout = new ViewModels.Checkout(repo, currentBranch.SelectedValue as string);
+                    if (repo.Branches.All(b => b.Name != targetBranch))
+                    {
+                        continue;
+                    }
+
+                    var checkout = new ViewModels.Checkout(repo, targetBranch);
                     checkout.PreAction = Models.DealWithLocalChanges.Discard;
                     PopupHost.ShowAndStartPopup(checkout);
                 }

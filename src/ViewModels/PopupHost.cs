@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using CommunityToolkit.Mvvm.ComponentModel;
 
@@ -29,6 +30,7 @@ namespace SourceGit.ViewModels
         {
             popup.HostPageId = Active.GetId();
             Active.Popup = popup;
+            Active._queue.Clear();
         }
 
         public static void ShowAndStartPopup(Popup popup)
@@ -104,6 +106,8 @@ namespace SourceGit.ViewModels
                 return;
             if (_popup.InProgress)
                 return;
+
+            _queue.Clear();
             Popup = null;
         }
 
