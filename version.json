@@ -1,0 +1,5 @@
+{
+    "tag_name": "v8.48",
+    "name": "Release 8.48",
+    "body": "1. when pull all get error, the pull all will continue when pull a single repo.\n2. when checkout branch for all repo. skip repo that do not has such branch. \n3. refresh workingcopy after stage or discard lines."
+}
