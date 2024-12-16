@@ -1,3 +1,5 @@
+notepad VERSION
+notepad version.json
 dotnet publish -c Release -r win-x64 -o ./build src/SourceGit.csproj
 cd build
 del build.zip
