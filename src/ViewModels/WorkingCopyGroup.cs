@@ -1149,7 +1149,7 @@ namespace SourceGit.ViewModels
             if (change == null)
                 DetailContext = null;
             else if (change.IsConflit && isUnstaged)
-                DetailContext = new ConflictContext(change.Repo.FullPath, change);
+                DetailContext = new Conflict(change.Repo, change.Repo.WorkingCopy, change);
             else
                 DetailContext = new DiffContext(change.Repo.FullPath, new Models.DiffOption(change, isUnstaged), _detailContext as DiffContext);
         }

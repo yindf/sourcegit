@@ -159,7 +159,7 @@
 
         <ContentControl Content="{Binding DetailContext}">
           <ContentControl.DataTemplates>
-            <DataTemplate DataType="vm:ConflictContext">
+            <DataTemplate DataType="vm:Conflict">
               <Border Background="{DynamicResource Brush.Window}" BorderThickness="1" BorderBrush="{DynamicResource Brush.Border2}">
                 <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
                   <StackPanel Orientation="Vertical" IsVisible="{Binding !IsResolved}">

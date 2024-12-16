@@ -446,13 +446,13 @@ namespace SourceGit.ViewModels
             foreach (Repository repo in Repositories)
             {
                 if (File.Exists(Path.Combine(repo.GitDir, "CHERRY_PICK_HEAD")))
-                    inProgress = new CherryPickInProgress(repo.FullPath);
+                    inProgress = new CherryPickInProgress(repo);
                 else if (File.Exists(Path.Combine(repo.GitDir, "REBASE_HEAD")) && Directory.Exists(Path.Combine(repo.GitDir, "rebase-merge")))
                     inProgress = new RebaseInProgress(repo);
                 else if (File.Exists(Path.Combine(repo.GitDir, "REVERT_HEAD")))
-                    inProgress = new RevertInProgress(repo.FullPath);
+                    inProgress = new RevertInProgress(repo);
                 else if (File.Exists(Path.Combine(repo.GitDir, "MERGE_HEAD")))
-                    inProgress = new MergeInProgress(repo.FullPath);
+                    inProgress = new MergeInProgress(repo);
             }
 
             Dispatcher.UIThread.Invoke(() =>
