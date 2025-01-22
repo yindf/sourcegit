@@ -374,7 +374,6 @@ namespace SourceGit.ViewModels
             {
                 var pull = new Pull(repo, null);
                 pull.PreAction = Models.DealWithLocalChanges.StashAndReaply;
-                pull.UseRebase = false;
                 PopupHost.ShowAndStartPopup(pull);
             }
         }

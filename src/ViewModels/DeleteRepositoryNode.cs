@@ -19,7 +19,17 @@ namespace SourceGit.ViewModels
         public override Task<bool> Sure()
         {
             Preference.Instance.RemoveNode(_node, true);
-            Welcome.Instance.Refresh();
+            Welcome.Instance.Refresh(); 
+
+            if (Node.Repo != null)
+            {
+                if (App.GetLauncer().ActivePage.Data is RepositoryGroup group)
+                {
+                    group.Repositories.Remove(Node.Repo);
+                    group.Refresh();
+                }
+            }
+
             return null;
         }
 

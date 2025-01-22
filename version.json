@@ -1,5 +1,5 @@
 {
-    "tag_name": "v8.49",
-    "name": "Release 8.49",
-    "body": "1. 同步更新"
+    "tag_name": "v8.50",
+    "name": "Release 8.50",
+    "body": "1. 可以自己选是否要rebase"
 }
