@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 
 using Avalonia.Controls;
-using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -15,7 +14,6 @@ namespace SourceGit.ViewModels
 {
     public class WorkingCopyGroup : ObservableObject
     {
-
         public bool IncludeUntracked
         {
             get => _includeUntracked;
@@ -71,7 +69,8 @@ namespace SourceGit.ViewModels
 
         public bool UseAmend
         {
-            get => false;
+            get => _useAmend;
+            set => SetProperty(ref _useAmend, value);
         }
 
         public bool IsCommitWithPushVisible
@@ -158,6 +157,18 @@ namespace SourceGit.ViewModels
         public RepositoryGroup Group
         {
             get => _group;
+        }
+
+        public ObservableCollection<FileTypeFilter> SelectedFilters
+        {
+            get => _selectedFilters;
+            set
+            {
+                if (SetProperty(ref _selectedFilters, value))
+                {
+                    ApplyFileTypeFilters();
+                }
+            }
         }
 
         public WorkingCopyGroup(RepositoryGroup group, List<Repository> repos)
@@ -293,16 +304,109 @@ namespace SourceGit.ViewModels
             //});
         }
 
-        //public void StashAll(bool autoStart)
-        //{
-        //    if (!PopupHost.CanCreatePopup())
-        //        return;
+        public void FilterCodeFile()
+        {
+            if (_filterEnabled)
+            {
+                // Clear filters
+                _selectedFilters.Clear();
+                Unstaged = _cached;
+                _filterEnabled = false;
+            }
+            else
+            {
+                // Apply "cs" filter as default
+                var csFilter = WorkingCopy.FileTypeFilters.FirstOrDefault(f => f.Extension == "cs");
+                if (csFilter != null)
+                {
+                    _selectedFilters.Add(csFilter);
+                    ApplyFileTypeFilters();
+                }
+            }
+        }
 
-        //    if (autoStart)
-        //        PopupHost.ShowAndStartPopup(new StashChanges(_repo, _cached, false));
-        //    else
-        //        PopupHost.ShowPopup(new StashChanges(_repo, _cached, false));
-        //}
+        private void ApplyFileTypeFilters()
+        {
+            if (_selectedFilters == null || _selectedFilters.Count == 0)
+            {
+                // No filters, show all files
+                Unstaged = _cached;
+                _filterEnabled = false;
+                return;
+            }
+
+            // Apply selected filters
+            Unstaged = _cached.Where(c => _selectedFilters.Any(filter =>
+                c.Path.EndsWith("." + filter.Extension, StringComparison.OrdinalIgnoreCase))).ToList();
+            _filterEnabled = true;
+        }
+
+        public void ApplyFileTypeFilter(FileTypeFilter filter)
+        {
+            if (filter == null) return;
+            
+            if (filter.Extension == "Clear All")
+            {
+                // Clear all filters
+                _selectedFilters.Clear();
+                Unstaged = _cached;
+                _filterEnabled = false;
+            }
+            else
+            {
+                // Toggle the filter
+                if (_selectedFilters.Any(f => f.Extension == filter.Extension))
+                {
+                    var existingFilter = _selectedFilters.First(f => f.Extension == filter.Extension);
+                    _selectedFilters.Remove(existingFilter);
+                }
+                else
+                {
+                    _selectedFilters.Add(filter);
+                }
+                
+                if (_selectedFilters.Count == 0)
+                {
+                    // No filters, show all
+                    Unstaged = _cached;
+                    _filterEnabled = false;
+                }
+                else
+                {
+                    // Apply selected filters
+                    Unstaged = _cached.Where(c => _selectedFilters.Any(filter => 
+                        c.Path.EndsWith("." + filter.Extension, StringComparison.OrdinalIgnoreCase))).ToList();
+                    _filterEnabled = true;
+                }
+            }
+        }
+
+        public ContextMenu CreateFilterContextMenu()
+        {
+            var menu = new ContextMenu();
+            foreach (var filter in WorkingCopy.FileTypeFilters)
+            {
+                var isChecked = _selectedFilters.Any(f => f.Extension == filter.Extension);
+                var item = new MenuItem
+                {
+                    Header = filter.Extension,
+                };
+
+                if (filter.Extension != "Clear All")
+                {
+                    item.Icon = isChecked ? new TextBlock { Text = "✔" } : null;
+                }
+
+                item.Click += (_, _) =>
+                {
+                    ApplyFileTypeFilter(filter);
+                };
+
+                menu.Items.Add(item);
+            }
+
+            return menu;
+        }
 
         public void StageSelected(Models.Change next)
         {
@@ -852,42 +956,6 @@ namespace SourceGit.ViewModels
                     e.Handled = true;
                 };
 
-                //var stash = new MenuItem();
-                //stash.Header = App.Text("FileCM.Stash");
-                //stash.Icon = App.CreateMenuIcon("Icons.Stashes.Add");
-                //stash.Click += (_, e) =>
-                //{
-                //    if (PopupHost.CanCreatePopup())
-                //        PopupHost.ShowPopup(new StashChanges(_repo, _selectedStaged, true));
-
-                //    e.Handled = true;
-                //};
-
-                //var patch = new MenuItem();
-                //patch.Header = App.Text("FileCM.SaveAsPatch");
-                //patch.Icon = App.CreateMenuIcon("Icons.Diff");
-                //patch.Click += async (_, e) =>
-                //{
-                //    var storageProvider = App.GetStorageProvider();
-                //    if (storageProvider == null)
-                //        return;
-
-                //    var options = new FilePickerSaveOptions();
-                //    options.Title = App.Text("FileCM.SaveAsPatch");
-                //    options.DefaultExtension = ".patch";
-                //    options.FileTypeChoices = [new FilePickerFileType("Patch File") { Patterns = ["*.patch"] }];
-
-                //    var storageFile = await storageProvider.SaveFilePickerAsync(options);
-                //    if (storageFile != null)
-                //    {
-                //        var succ = await Task.Run(() => Commands.SaveChangesAsPatch.Exec(_repo.FullPath, _selectedStaged, false, storageFile.Path.LocalPath));
-                //        if (succ)
-                //            App.SendNotification(_repo.FullPath, App.Text("SaveAsPatchSuccess"));
-                //    }
-
-                //    e.Handled = true;
-                //};
-
                 var history = new MenuItem();
                 history.Header = App.Text("FileHistory");
                 history.Icon = App.CreateMenuIcon("Icons.Histories");
@@ -924,87 +992,6 @@ namespace SourceGit.ViewModels
                 menu.Items.Add(history);
                 menu.Items.Add(new MenuItem() { Header = "-" });
 
-                //var lfsEnabled = new Commands.LFS(_repo.FullPath).IsEnabled();
-                //if (lfsEnabled)
-                //{
-                //    var lfs = new MenuItem();
-                //    lfs.Header = App.Text("GitLFS");
-                //    lfs.Icon = App.CreateMenuIcon("Icons.LFS");
-
-                //    var lfsLock = new MenuItem();
-                //    lfsLock.Header = App.Text("GitLFS.Locks.Lock");
-                //    lfsLock.Icon = App.CreateMenuIcon("Icons.Lock");
-                //    lfsLock.IsEnabled = _repo.Remotes.Count > 0;
-                //    if (_repo.Remotes.Count == 1)
-                //    {
-                //        lfsLock.Click += async (_, e) =>
-                //        {
-                //            var succ = await Task.Run(() => new Commands.LFS(_repo.FullPath).Lock(_repo.Remotes[0].Name, change.Path));
-                //            if (succ)
-                //                App.SendNotification(_repo.FullPath, $"Lock file \"{change.Path}\" successfully!");
-
-                //            e.Handled = true;
-                //        };
-                //    }
-                //    else
-                //    {
-                //        foreach (var remote in _repo.Remotes)
-                //        {
-                //            var remoteName = remote.Name;
-                //            var lockRemote = new MenuItem();
-                //            lockRemote.Header = remoteName;
-                //            lockRemote.Click += async (_, e) =>
-                //            {
-                //                var succ = await Task.Run(() => new Commands.LFS(_repo.FullPath).Lock(remoteName, change.Path));
-                //                if (succ)
-                //                    App.SendNotification(_repo.FullPath, $"Lock file \"{change.Path}\" successfully!");
-
-                //                e.Handled = true;
-                //            };
-                //            lfsLock.Items.Add(lockRemote);
-                //        }
-                //    }
-                //    lfs.Items.Add(lfsLock);
-
-                //    var lfsUnlock = new MenuItem();
-                //    lfsUnlock.Header = App.Text("GitLFS.Locks.Unlock");
-                //    lfsUnlock.Icon = App.CreateMenuIcon("Icons.Unlock");
-                //    lfsUnlock.IsEnabled = _repo.Remotes.Count > 0;
-                //    if (_repo.Remotes.Count == 1)
-                //    {
-                //        lfsUnlock.Click += async (_, e) =>
-                //        {
-                //            var succ = await Task.Run(() => new Commands.LFS(_repo.FullPath).Unlock(_repo.Remotes[0].Name, change.Path, false));
-                //            if (succ)
-                //                App.SendNotification(_repo.FullPath, $"Unlock file \"{change.Path}\" successfully!");
-
-                //            e.Handled = true;
-                //        };
-                //    }
-                //    else
-                //    {
-                //        foreach (var remote in _repo.Remotes)
-                //        {
-                //            var remoteName = remote.Name;
-                //            var unlockRemote = new MenuItem();
-                //            unlockRemote.Header = remoteName;
-                //            unlockRemote.Click += async (_, e) =>
-                //            {
-                //                var succ = await Task.Run(() => new Commands.LFS(_repo.FullPath).Unlock(remoteName, change.Path, false));
-                //                if (succ)
-                //                    App.SendNotification(_repo.FullPath, $"Unlock file \"{change.Path}\" successfully!");
-
-                //                e.Handled = true;
-                //            };
-                //            lfsUnlock.Items.Add(unlockRemote);
-                //        }
-                //    }
-                //    lfs.Items.Add(lfsUnlock);
-
-                //    menu.Items.Add(lfs);
-                //    menu.Items.Add(new MenuItem() { Header = "-" });
-                //}
-
                 menu.Items.Add(copyPath);
                 menu.Items.Add(copyFileName);
             }
@@ -1019,45 +1006,7 @@ namespace SourceGit.ViewModels
                     e.Handled = true;
                 };
 
-                //var stash = new MenuItem();
-                //stash.Header = App.Text("FileCM.StashMulti", _selectedStaged.Count);
-                //stash.Icon = App.CreateMenuIcon("Icons.Stashes.Add");
-                //stash.Click += (_, e) =>
-                //{
-                //    if (PopupHost.CanCreatePopup())
-                //        PopupHost.ShowPopup(new StashChanges(_repo, _selectedStaged, true));
-
-                //    e.Handled = true;
-                //};
-
-                //var patch = new MenuItem();
-                //patch.Header = App.Text("FileCM.SaveAsPatch");
-                //patch.Icon = App.CreateMenuIcon("Icons.Diff");
-                //patch.Click += async (_, e) =>
-                //{
-                //    var storageProvider = App.GetStorageProvider();
-                //    if (storageProvider == null)
-                //        return;
-
-                //    var options = new FilePickerSaveOptions();
-                //    options.Title = App.Text("FileCM.SaveAsPatch");
-                //    options.DefaultExtension = ".patch";
-                //    options.FileTypeChoices = [new FilePickerFileType("Patch File") { Patterns = ["*.patch"] }];
-
-                //    var storageFile = await storageProvider.SaveFilePickerAsync(options);
-                //    if (storageFile != null)
-                //    {
-                //        var succ = await Task.Run(() => Commands.SaveChangesAsPatch.Exec(_repo.FullPath, _selectedStaged, false, storageFile.Path.LocalPath));
-                //        if (succ)
-                //            App.SendNotification(_repo.FullPath, App.Text("SaveAsPatchSuccess"));
-                //    }
-
-                //    e.Handled = true;
-                //};
-
                 menu.Items.Add(unstage);
-                //menu.Items.Add(stash);
-                //menu.Items.Add(patch);
             }
 
             return menu;
@@ -1222,8 +1171,6 @@ namespace SourceGit.ViewModels
             change.Repo.SetWatcherEnabled(true);
         }
 
-
-
         private void DoCommit(bool autoStage, bool autoPush)
         {
             var group = Staged.GroupBy(c => c.Repo);
@@ -1309,7 +1256,7 @@ namespace SourceGit.ViewModels
             return false;
         }
 
-        private List<Repository> _repos = null;
+        private List<Repository> _repos = new List<Repository>();
         private RepositoryGroup _group = null;
         private bool _isLoadingData = false;
         private bool _isStaging = false;
@@ -1317,15 +1264,18 @@ namespace SourceGit.ViewModels
         private bool _isCommitting = false;
         private bool _useAmend = false;
         private bool _canCommitWithPush = false;
+        private bool _filterEnabled = false;
         private List<Models.Change> _cached = [];
-        private List<Models.Change> _unstaged = [];
-        private List<Models.Change> _staged = [];
+        private List<Models.Change> _unstaged = new List<Models.Change>();
+        private List<Models.Change> _staged = new List<Models.Change>();
         private List<Models.Change> _selectedUnstaged = [];
         private List<Models.Change> _selectedStaged = [];
         private int _count = 0;
         private object _detailContext = null;
         private string _commitMessage = string.Empty;
-        private bool _includeUntracked;
-        private bool _autoStageBeforeCommit;
+        private bool _includeUntracked = true;
+        private bool _autoStageBeforeCommit = true;
+        private ObservableCollection<FileTypeFilter> _fileTypeFilters = null;
+        private ObservableCollection<FileTypeFilter> _selectedFilters = new ObservableCollection<FileTypeFilter>();
     }
 }

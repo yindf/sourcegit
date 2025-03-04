@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 using Avalonia.Controls;
@@ -8,9 +9,16 @@ using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 
 using CommunityToolkit.Mvvm.ComponentModel;
+using System.Collections.ObjectModel;
 
 namespace SourceGit.ViewModels
 {
+    public class FileTypeFilter
+    {
+        public string Extension { get; set; }
+        public override string ToString() => Extension;
+    }
+
     public class WorkingCopy : ObservableObject
     {
         public bool IncludeUntracked
@@ -85,6 +93,34 @@ namespace SourceGit.ViewModels
 
                     Staged = GetStagedChanges();
                     SelectedStaged = [];
+                }
+            }
+        }
+
+        public static readonly ObservableCollection<FileTypeFilter> FileTypeFilters = new ObservableCollection<FileTypeFilter>
+                    {
+                        new FileTypeFilter { Extension = "cs" },
+                        new FileTypeFilter { Extension = "prefab" },
+                        new FileTypeFilter { Extension = "meta" },
+                        new FileTypeFilter { Extension = "jpg" },
+                        new FileTypeFilter { Extension = "png" },
+                        new FileTypeFilter { Extension = "fbx" },
+                        new FileTypeFilter { Extension = "unity" },
+                        new FileTypeFilter { Extension = "asset" },
+                        new FileTypeFilter { Extension = "mat" },
+                        new FileTypeFilter { Extension = "json" },
+                        new FileTypeFilter { Extension = "Clear All" }
+                    };
+
+        private ObservableCollection<FileTypeFilter> _selectedFilters = new ObservableCollection<FileTypeFilter>();
+        public ObservableCollection<FileTypeFilter> SelectedFilters
+        {
+            get => _selectedFilters;
+            set
+            {
+                if (SetProperty(ref _selectedFilters, value))
+                {
+                    ApplyFileTypeFilters();
                 }
             }
         }
@@ -306,6 +342,112 @@ namespace SourceGit.ViewModels
             {
                 DataContext = new AssumeUnchangedManager(_repo.FullPath)
             });
+        }
+
+        public void FilterCodeFile()
+        {
+            if (_filterEnabled)
+            {
+                // Clear filters
+                _selectedFilters.Clear();
+                Unstaged = _cached;
+                _filterEnabled = false;
+            }
+            else
+            {
+                // Apply "cs" filter as default
+                var csFilter = FileTypeFilters.FirstOrDefault(f => f.Extension == "cs");
+                if (csFilter != null)
+                {
+                    _selectedFilters.Add(csFilter);
+                    ApplyFileTypeFilters();
+                }
+            }
+        }
+
+        private void ApplyFileTypeFilters()
+        {
+            if (_selectedFilters == null || _selectedFilters.Count == 0)
+            {
+                // No filters, show all files
+                Unstaged = _cached;
+                _filterEnabled = false;
+                return;
+            }
+
+            // Apply selected filters
+            Unstaged = _cached.Where(c => _selectedFilters.Any(filter => 
+                c.Path.EndsWith("." + filter.Extension, StringComparison.OrdinalIgnoreCase))).ToList();
+            _filterEnabled = true;
+        }
+
+
+        public void ApplyFileTypeFilter(FileTypeFilter filter)
+        {
+            if (filter == null)
+                return;
+
+            if (filter.Extension == "Clear All")
+            {
+                // Clear all filters
+                _selectedFilters.Clear();
+                Unstaged = _cached;
+                _filterEnabled = false;
+            }
+            else
+            {
+                // Toggle the filter
+                if (_selectedFilters.Any(f => f.Extension == filter.Extension))
+                {
+                    var existingFilter = _selectedFilters.First(f => f.Extension == filter.Extension);
+                    _selectedFilters.Remove(existingFilter);
+                }
+                else
+                {
+                    _selectedFilters.Add(filter);
+                }
+
+                if (_selectedFilters.Count == 0)
+                {
+                    // No filters, show all
+                    Unstaged = _cached;
+                    _filterEnabled = false;
+                }
+                else
+                {
+                    // Apply selected filters
+                    Unstaged = _cached.Where(c => _selectedFilters.Any(filter =>
+                        c.Path.EndsWith("." + filter.Extension, StringComparison.OrdinalIgnoreCase))).ToList();
+                    _filterEnabled = true;
+                }
+            }
+        }
+
+        public ContextMenu CreateFilterContextMenu()
+        {
+            var menu = new ContextMenu();
+            foreach (var filter in FileTypeFilters)
+            {
+                var isChecked = _selectedFilters.Any(f => f.Extension == filter.Extension);
+                var item = new MenuItem
+                {
+                    Header = filter.Extension,
+                };
+
+                if (filter.Extension != "Clear All")
+                {
+                    item.Icon = isChecked ? new TextBlock { Text = "✔" } : null;
+                }
+
+                item.Click += (_, _) =>
+                {
+                    ApplyFileTypeFilter(filter);
+                };
+
+                menu.Items.Add(item);
+            }
+
+            return menu;
         }
 
         public void StashAll(bool autoStart)
@@ -1597,5 +1739,8 @@ namespace SourceGit.ViewModels
 
         private bool _hasUnsolvedConflicts = false;
         private InProgressContext _inProgressContext = null;
+        private bool _filterEnabled = false;
+        private ObservableCollection<FileTypeFilter> _fileTypeFilters;
+
     }
 }

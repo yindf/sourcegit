@@ -34,8 +34,11 @@ namespace SourceGit.Views
 
             _switchDataContext = true;
             currentBranch.ItemsSource = commonBranchNames;
-            currentBranch.SelectedItem = repos.FirstOrDefault().CurrentBranch.Name;
-            _switchDataContext = false;
+            if (repos.FirstOrDefault().CurrentBranch != null)
+            {
+                currentBranch.SelectedItem = repos.FirstOrDefault().CurrentBranch?.Name;
+                _switchDataContext = false;
+            }
         }
 
         protected override void OnInitialized()

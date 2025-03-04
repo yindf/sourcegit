@@ -163,8 +163,17 @@ namespace SourceGit.Views
 
                 App.OpenDialog(dialog);
             }
+        }
 
-            e.Handled = true;
+        private void OnOpenFilterMenu(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button && DataContext is ViewModels.WorkingCopy vm)
+            {
+                var menu = vm.CreateFilterContextMenu();
+                menu.Placement = PlacementMode.BottomEdgeAlignedLeft;
+                menu?.Open(button);
+                e.Handled = true;
+            }
         }
 
         private void OnDropToStage(object sender, DragEventArgs e)
